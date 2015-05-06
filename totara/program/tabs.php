@@ -113,8 +113,18 @@ if (has_capability('totara/program:handleexceptions', $context) && ($exceptions 
     }
 }
 
+// Recertificate Tab
+if (has_capability('totara/program:configuredetails', $context)) {
+    //disable details link if creating a new program to avoid fatal error
+    $url = ($id == 0) ? '#' : $CFG->wwwroot.'/local/sop/force_recertificate.php?id='.$id;
+    $toprow[] = new tabobject('forcerecert', $url, get_string('force_recert', 'local_sop'));
+    if (substr($currenttab, 0, 11) == 'forcerecert'){
+        $activated[] = 'forcerecert';
+    }
+}
+
 if (!$id) {
-    $inactive += array('overview', 'content', 'assignments', 'messages', 'certification');
+    $inactive += array('overview', 'content', 'assignments', 'messages', 'certification', 'forcerecert');
 }
 
 $tabs = array($toprow);
