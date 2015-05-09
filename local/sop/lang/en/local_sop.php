@@ -37,3 +37,6 @@ $string['label_desc'] = '<h4>I have read and understood.....</h4><p>Click the co
                             confirm that you have read and understood the content and materials contained within the
                             SOP URL above.</p>';
 $string['label_complete_text'] = '<h3 style="textalign:center; color:red;">You have completed this SOP version!</h3>';
+$string['bulkuploadsopcourse_desc'] = 'Upload courses in bulk';
+$string['bulkuploadcoursesettings'] = 'SOP bulk upload';
+$string['uploadsopcourse'] = 'upload SOP course';

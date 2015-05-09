@@ -28,7 +28,7 @@
  * @return integer $id id of the created certificate
  */
 function create_certificate($newdata, $editoroptions = NULL) {
-    require_once( '../../config.php');
+//    require_once( '..'.DIRECTORY_SEPERATOR.'..'.DIRECTORY_SEPERATOR.'config.php');
     global $CFG;
     require_once($CFG->libdir . '/adminlib.php');
     require_once($CFG->dirroot . '/totara/program/lib.php');
