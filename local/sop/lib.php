@@ -163,25 +163,25 @@ function create_certificate($newdata, $editoroptions = NULL) {
 function create_mod($data) {
     global $DB, $CFG;
 
-//    $hr_label = sop_hr_label($data->id);
-//    $hr_label->introeditor = array('text' => get_string('label_complete_text', 'local_sop'), 'format' => 1);
+    $hr_label = sop_hr_label($data->id);
+    $hr_label->introeditor = array('text' => get_string('label_complete_text', 'local_sop'), 'format' => 1);
     require_once($CFG->dirroot . '/course/modlib.php');
     $course = $DB->get_record('course', array('id' => $data->id));
-//    $completion_label = add_moduleinfo($hr_label, $course);
-    
-    
+    $completion_label = add_moduleinfo($hr_label, $course);
+
+
     unset($hr_label);
     $hr_label = sop_hr_label($data->id);
     add_moduleinfo($hr_label, $course);
-    
+
     //Create URL activity
-    
-    $data->name = $data->fullname;
+
+    $data->name = $data->shortname . ' ' . $data->fullname;
     $data->externalurl = $data->customfield_certificationurl;
     $data->introeditor = array('text' => get_string('url_desc', 'local_sop'), 'format' => 1);
     $data->showdescription = 1;
     $data->mform_isexpanded_id_content = 1;
-    $data->display = 6;
+    $data->display = 3;
     $data->printintro = 1;
     $data->completionunlocked = 1;
     $data->completion = 2;
@@ -198,20 +198,37 @@ function create_mod($data) {
     unset($hr_label);
     $hr_label = sop_hr_label($data->id);
     add_moduleinfo($hr_label, $course);
-    
+
     //Create label activity
     $data->name = '';
     $data->intro = get_string('label_desc', 'local_sop');
     $data->modulename = 'label';
     $data->module = 14;
     $data->completion = 1;
-    $data->availabilityconditionsjson = '{"op":"&","c":[{"type":"completion","cm":'.$cm_url.',"e":1}],"showc":[true]}';
-    
+    $data->availabilityconditionsjson = '{"op":"&","c":[{"type":"completion","cm":' . $cm_url . ',"e":1}],"showc":[true]}';
+
     unset($data->coursemodule);
     unset($data->instance);
     $mod_label = add_moduleinfo($data, $course);
     $cm_label = $mod_label->coursemodule;
 
+    $cmrecord = $DB->get_record('course_modules', array('course' => $completion_label->course, 'instance' => $completion_label->instance), 'id');
+    $updatecomplete = new stdClass();
+    $updatecomplete->availability = '{"op":"&","c":[{"type":"completion","cm":' . $cm_label . ',"e":1}],"showc":[false]}';
+    $updatecomplete->id = $cmrecord->id;
+    $DB->update_record('course_modules', $updatecomplete);
+    
+    unset($hr_label);
+    $hr_label = sop_hr_label($data->id);
+    add_moduleinfo($hr_label, $course);
+    
+    unset($hr_label);
+    $hr_label = sop_hr_label($data->id);
+    $hr_label->introeditor = array('text' => get_string('label_complete2_text', 'local_sop'), 'format' => 1);
+    $hr_label->availability = '{"op":"&","c":[{"type":"completion","cm":' . $cm_label . ',"e":1}],"showc":[false]}';
+    $completion1_label = add_moduleinfo($hr_label, $course);
+    
+    
     $retrun_arr = array('cm_url' => $cm_url, 'cm_label' => $cm_label);
     return $retrun_arr;
 }
@@ -347,16 +364,23 @@ function update_mod($course, $mod) {
     $modinfo->modulename = 'url';
     $modinfo->externalurl = $mod->customfield_certificationurl;
     $modinfo->coursemodule = $cm->id;
-    $modinfo->display = 1;
     $modinfo->timemodified = time();
     $modinfo->introeditor = array('text' => '', 'format' => 1);
     $modinfo->visible = 1;
+    $modinfo->name = $mod->shortname . ' ' . $mod->fullname;
     require_once($CFG->dirroot . '/course/modlib.php');
     update_moduleinfo($cm, $modinfo, $course);
 
-    $certifid = $DB->get_record('prog', array('shortname' => "Certification_$course->shortname"), 'certifid');
-    require_once($CFG->dirroot . '/totara/certification/lib.php');
-    sop_recertify_window_opens_stage($certifid->certifid);
+    if ($progid = $DB->get_record('prog', array('idnumber' => $course->idnumber), 'id, certifid')) {
+        $progobj = new stdClass();
+        $progobj->shortname = 'Certification_' . $mod->shortname;
+        $progobj->fullname = 'Certification ' . $mod->fullname;
+        $progobj->id = $progid->id;
+        $DB->update_record('prog', $progobj);
+
+        require_once($CFG->dirroot . '/totara/certification/lib.php');
+        sop_recertify_window_opens_stage($progid->certifid);
+    }
 }
 
 /**
@@ -521,7 +545,6 @@ function add_recertif_selection_all($ufiltering, $certid) {
     }
 }
 
-
 /*
  * Edit the SOP course topic name
  * @param $course stdClass object of the SOP course
@@ -531,14 +554,14 @@ function sop_edit_section_name($course) {
     global $DB, $CFG;
 
     $topic_id = $DB->get_record('course_sections', array('course' => $course->id, 'section' => 1), 'id');
-    
+
     $section = new stdClass();
-    $section->name = 'SOP Document Review '.$course->shortname;
-    $section->summary_editor = array('text' => get_string('soptopicsummary', 'local_sop',  $course->customfield_issop.'.0.0', true), 'format' => 1);
-    $section->summary = get_string('soptopicsummary', 'local_sop', $course->customfield_issop.'.0.0');
+    $section->name = 'Document Training ' . $course->shortname . ' ' . $course->customfield_sopversion;
+//    $section->summary_editor = array('text' => get_string('soptopicsummary', 'local_sop',  $course->customfield_issop.'.0.0', true), 'format' => 1);
+    $section->summary = get_string('soptopicsummary', 'local_sop');
 
     $section->id = $topic_id->id;
-    
+
     $DB->update_record('course_sections', $section);
     rebuild_course_cache($course->id, true);
 }

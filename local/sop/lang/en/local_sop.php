@@ -29,14 +29,15 @@ $string['issop_description'] = 'A checkbox indicating that the course/certificat
 $string['certificationurl_description'] = 'A link to the associated certification URL for the course';
 $string['force_recertify'] = 'Force recertification';
 $string['force_recert'] = 'Force recertification';
-$string['soptopicsummary'] = '<h4>Document Version: {$a}</h4><p>Instructions...</p><p></p><ol><li>Click the
+$string['soptopicsummary'] = '<p>Instructions...</p><p></p><ol><li>Click the
                                URL link to read the SOP</li><li>Click the completion box confirming you have read and
                                understood the material</li><li>Thats it!</li></ol><p></p>';
 $string['url_desc'] = '<p>Click the URL directly above to read the SOP document.</p>';
 $string['label_desc'] = '<h4>I have read and understood.....</h4><p>Click the completion check box to the right to
                             confirm that you have read and understood the content and materials contained within the
                             SOP URL above.</p>';
-$string['label_complete_text'] = '<h3 style="textalign:center; color:red;">You have completed this SOP version!</h3>';
+$string['label_complete_text'] = '<h3 class="sop_text_completed">You have completed training on this document</h3>';
+$string['label_complete2_text'] = '<h3 class="sop_text_completed">You have completed training on this document.</h3><p class="sop_view_record">View my <a href="../totara/plan/record/index.php">Record of Learning</a></p>';
 $string['bulkuploadsopcourse_desc'] = 'Upload courses in bulk';
 $string['bulkuploadcoursesettings'] = 'SOP bulk upload';
 $string['uploadsopcourse'] = 'upload SOP course';

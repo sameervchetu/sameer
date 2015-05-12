@@ -278,6 +278,11 @@ class local_sop_external extends external_api {
                         array(
                             'idnumber' => new external_value(PARAM_ALPHANUM, 'course id number'),
                             'customfield_certificationurl' => new external_value(PARAM_TEXT, 'sop certification url course'),
+                            'fullname' => new external_value(PARAM_TEXT, 'full name'),
+                            'shortname' => new external_value(PARAM_TEXT, 'course short name'),
+                            'categoryid' => new external_value(PARAM_INT, 'category id'),
+                            'customfield_sopversion' => new external_value(PARAM_TEXT, 'sopversion'),
+                            'customfield_issop' => new external_value(PARAM_TEXT, 'is sop course'),
                         )
                     ), 'SOP to update'
                 )
@@ -287,6 +292,7 @@ class local_sop_external extends external_api {
 
     public static function update_sop($courses) {
         global $CFG, $DB;
+         
         require_once($CFG->dirroot . "/course/lib.php");
         require_once($CFG->libdir . '/completionlib.php');
 
@@ -299,7 +305,6 @@ class local_sop_external extends external_api {
             $newcourse = new stdClass();
             $newcourse = (object) $course;
             $newcourse->id = $coursedata->id;
-            $newcourse->customfield_sopversion = 2.0;
             $newcourse->customfield_wslog_editor['text'] = 'SOP version and URL resource updated';
             $transaction = $DB->start_delegated_transaction();
             update_course($newcourse);
@@ -307,6 +312,7 @@ class local_sop_external extends external_api {
             update_mod($coursedata, $newcourse);
             require_once($CFG->dirroot.'/totara/customfield/fieldlib.php');
             customfield_save_data($newcourse, 'course', 'course');
+            sop_edit_section_name($newcourse);
             $transaction->allow_commit();
             $resultcourses[] = array('id' => $coursedata->id, 'status' => 'SOP updated successfully');
         }

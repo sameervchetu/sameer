@@ -13,7 +13,7 @@
  *
  * @authorr Jerome Mouneyrac
  */
-/// SETUP - NEED TO BE CHANGED
+
 require_once ('..' . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . 'config.php');
 global $CFG, $DB;
 
@@ -23,17 +23,12 @@ $course = new stdClass();
 $course->idnumber = required_param('idnumber', PARAM_ALPHANUM);
 $course->customfield_certificationurl = required_param('certificateurl', PARAM_URL);
 
-if (!$exist = $DB->get_record('course', array('idnumber' => $course->idnumber), 'id, fullname')) {
-    $functionname = 'local_sop_create_sop';
-    $fullname = required_param('fullname', PARAM_TEXT);
+$fullname = required_param('fullname', PARAM_TEXT);
     $shortname = required_param('shortname', PARAM_TEXT);
 
-    /// PARAMETERS - NEED TO BE CHANGED IF YOU CALL A DIFFERENT FUNCTION
     $course->fullname = $fullname;
     $course->shortname = $shortname;
-    $course->summary = 'Test course from web service';
-    $course->lang = 'en';
-    $course->customfield_sopversion = '1.0.0';
+    $course->customfield_sopversion = required_param('sopversion', PARAM_TEXT);
     $course->customfield_issop = 1;
     $categoryid = required_param('categoryid', PARAM_TEXT);
     if ($catidno = $DB->get_record('course_categories', array('idnumber' => $categoryid), 'id')) {
@@ -41,6 +36,9 @@ if (!$exist = $DB->get_record('course', array('idnumber' => $course->idnumber), 
     } else {
         $course->categoryid = 1;
     }
+if (!$exist = $DB->get_record('course', array('idnumber' => $course->idnumber), 'id, fullname')) {
+    $functionname = 'local_sop_create_sop';
+    $course->lang = 'en';
 } else {
     $functionname = 'local_sop_update_sop';
 }

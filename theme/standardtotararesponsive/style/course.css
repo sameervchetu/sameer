@@ -94,3 +94,10 @@
 .ie8 .course-detail .row {
     margin-left: 0;
 }
+.sop_text_completed {
+    color: red;
+    text-align: center;
+}
+.sop_view_record {
+    text-align: center;
+}
