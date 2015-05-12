@@ -379,7 +379,7 @@ function update_mod($course, $mod) {
         $DB->update_record('prog', $progobj);
 
         require_once($CFG->dirroot . '/totara/certification/lib.php');
-        sop_recertify_window_opens_stage($progid->certifid);
+        sop_recertify_window_opens_stage($progid->id);
     }
 }
 
@@ -401,7 +401,7 @@ function sop_recertify_window_opens_stage($certifid, array $userforced = null) {
                   AND cfc.status = ?
                   AND cfc.renewalstatus = ?
                   AND u.deleted = 0
-                  AND cf.id = ?";
+                  AND p.id = ?";
 
     $results = $DB->get_records_sql($sql, array(CERTIFSTATUS_COMPLETED, CERTIFRENEWALSTATUS_NOTDUE, $certifid));
 
@@ -474,7 +474,7 @@ function get_recertif_selection_data($ufiltering, $cid) {
                   AND cfc.status = :cstatus
                   AND cfc.renewalstatus = :renewalstatus
                   AND u.deleted = :cdeleted
-                  AND cf.id = :cid";
+                  AND p.id = :cid";
 
     $sqlparams = array('cstatus' => CERTIFSTATUS_COMPLETED,
         'renewalstatus' => CERTIFRENEWALSTATUS_NOTDUE,
@@ -527,7 +527,7 @@ function add_recertif_selection_all($ufiltering, $certid) {
                   AND cfc.status = ?
                   AND cfc.renewalstatus = ?
                   AND u.deleted = 0
-                  AND cf.id = ?";
+                  AND p.id = ?";
 
     if ($results = $DB->get_records_sql($sql, array(CERTIFSTATUS_COMPLETED, CERTIFRENEWALSTATUS_NOTDUE, $certid))) {
         $count = count($results);
