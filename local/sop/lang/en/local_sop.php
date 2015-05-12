@@ -41,3 +41,4 @@ $string['label_complete2_text'] = '<h3 class="sop_text_completed">You have compl
 $string['bulkuploadsopcourse_desc'] = 'Upload courses in bulk';
 $string['bulkuploadcoursesettings'] = 'SOP bulk upload';
 $string['uploadsopcourse'] = 'upload SOP course';
+$string['nofilteredusers'] = 'No users found';

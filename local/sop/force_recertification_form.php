@@ -49,7 +49,7 @@ class force_recertif_form extends moodleform {
             }
 
         } else {
-            $achoices[-1] = get_string('nofilteredusers', 'bulkusers', $total);
+            $achoices[-1] = get_string('nofilteredusers', 'local_sop');
         }
 
         if (is_array($susers)) {
