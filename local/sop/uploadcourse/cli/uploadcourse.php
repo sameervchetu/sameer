@@ -28,6 +28,8 @@ require(__DIR__ . '/../../../../config.php');
 require_once($CFG->libdir . '/clilib.php');
 require_once($CFG->libdir . '/coursecatlib.php');
 require_once($CFG->libdir . '/csvlib.class.php');
+require_once($CFG->dirroot . '/local/sop/uploadcourse/classes/processor.php');
+require_once($CFG->dirroot . '/local/sop/uploadcourse/classes/tracker.php');
 
 $courseconfig = get_config('moodlecourse');
 
@@ -197,4 +199,4 @@ if ($readcount === false) {
     print_error('csvemptyfile', 'error', '', $cir->get_error());
 }
 $processor = new sop_tool_uploadcourse_processor($cir, $processoroptions, $defaults);
-$processor->execute(new sop_tool_uploadcourse_tracker(tool_uploadcourse_tracker::OUTPUT_PLAIN));
+$processor->execute(new sop_tool_uploadcourse_tracker(sop_tool_uploadcourse_tracker::OUTPUT_PLAIN));

@@ -711,6 +711,7 @@ class sop_tool_uploadcourse_course {
             $this->data['lang'] = 'en';
             $this->data['categoryid'] = $this->data['category'];
             unset($this->data['category']);
+            unset($this->data['legacyfiles']);
             $courses = $this->data;
             $params = array('courses' => $courses);
             $returndata = local_sop_external :: create_sop($params);

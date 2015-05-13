@@ -52,7 +52,7 @@ class local_sop_external extends external_api {
                             'newsitems' => new external_value(PARAM_INT,
                                     'number of recent items appearing on the course page',
                                     VALUE_DEFAULT, $courseconfig->newsitems),
-                            'startdate' => new external_value(PARAM_INT,
+                            'startdate' => new external_value(PARAM_RAW,
                                     'timestamp when the course start', VALUE_OPTIONAL),
                             'numsections' => new external_value(PARAM_INT,
                                     '(deprecated, use courseformatoptions) number of weeks/topics',
