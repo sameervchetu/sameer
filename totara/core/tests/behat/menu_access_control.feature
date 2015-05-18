@@ -6,7 +6,8 @@ Feature: Test visibility control of menu items
 
   @javascript
   Scenario: access controls cant be set on always shown menu items
-    Given I log in as "admin"
+    Given I am on a totara site
+    And I log in as "admin"
     And I navigate to "Main menu" node in "Site administration > Appearance"
     And I press "Add new menu item"
     And I set the following fields to these values:
@@ -18,7 +19,8 @@ Feature: Test visibility control of menu items
 
   @javascript
   Scenario: access controls can be set on always items set to use custom access rules
-    Given I log in as "admin"
+    Given I am on a totara site
+    And I log in as "admin"
     And I navigate to "Main menu" node in "Site administration > Appearance"
     And I press "Add new menu item"
     And I set the following fields to these values:
@@ -39,7 +41,8 @@ Feature: Test visibility control of menu items
 
   @javascript
   Scenario: role aggregation works as expected for menu item visibility
-    Given I log in as "admin"
+    Given I am on a totara site
+    And I log in as "admin"
     And I navigate to "Main menu" node in "Site administration > Appearance"
     And I press "Add new menu item"
     And I set the following fields to these values:
@@ -62,7 +65,8 @@ Feature: Test visibility control of menu items
 
   @javascript
   Scenario: roles see only the menu items they are configured to see
-    Given the following "users" exist:
+    Given I am on a totara site
+    And the following "users" exist:
       | username |
       | user1    |
       | user2    |
@@ -77,16 +81,16 @@ Feature: Test visibility control of menu items
       | user3 | C1 | manager |
     When I log in as "admin"
     And I create the following totara menu items:
-      | Menu title          | Visibility              | Menu default url address | Restrict access by role |Context                             | Student | Teacher | Manager | Assessor  | Guest |
-      | Students only       | Use custom access rules | http://totaralms.com     | 1                       | Users may have role in any context | 1       |         |         |           |       |
-      | Teachers only       | Use custom access rules | http://totaralms.com     | 1                       | Users may have role in any context |         | 1       |         |           |       |
-      | Managers only       | Use custom access rules | http://totaralms.com     | 1                       | Users may have role in any context |         |         | 1       |           |       |
-      | Students + Teachers | Use custom access rules | http://totaralms.com     | 1                       | Users may have role in any context | 1       | 1       |         |           |       |
-      | Teachers + Managers | Use custom access rules | http://totaralms.com     | 1                       | Users may have role in any context |         | 1       | 1       |           |       |
-      | Managers + Students | Use custom access rules | http://totaralms.com     | 1                       | Users may have role in any context | 1       |         | 1       |           |       |
-      | Guest only          | Use custom access rules | http://totaralms.com     | 1                       | Users may have role in any context |         |         |         |           | 1     |
-      | Everyone            | Use custom access rules | http://totaralms.com     | 1                       | Users may have role in any context | 1       | 1       | 1       | 1         | 1     |
-      | No one              | Use custom access rules | http://totaralms.com     | 1                       | Users may have role in any context |         |         |         | 1         |       |
+      | Menu title          | Visibility              | Menu default url address | Restrict access by role | Context                            | Learner | Editing Trainer | Site Manager | Assessor  | Guest |
+      | Students only       | Use custom access rules | http://totaralms.com     | 1                       | Users may have role in any context | 1       |                 |              |           |       |
+      | Teachers only       | Use custom access rules | http://totaralms.com     | 1                       | Users may have role in any context |         | 1               |              |           |       |
+      | Managers only       | Use custom access rules | http://totaralms.com     | 1                       | Users may have role in any context |         |                 | 1            |           |       |
+      | Students + Teachers | Use custom access rules | http://totaralms.com     | 1                       | Users may have role in any context | 1       | 1               |              |           |       |
+      | Teachers + Managers | Use custom access rules | http://totaralms.com     | 1                       | Users may have role in any context |         | 1               | 1            |           |       |
+      | Managers + Students | Use custom access rules | http://totaralms.com     | 1                       | Users may have role in any context | 1       |                 | 1            |           |       |
+      | Guest only          | Use custom access rules | http://totaralms.com     | 1                       | Users may have role in any context |         |                 |              |           | 1     |
+      | Everyone            | Use custom access rules | http://totaralms.com     | 1                       | Users may have role in any context | 1       | 1               | 1            | 1         | 1     |
+      | No one              | Use custom access rules | http://totaralms.com     | 1                       | Users may have role in any context |         |                 |              | 1         |       |
     And I log out
     # User 1 - the learner.
     Then I log in as "user1"
@@ -116,7 +120,8 @@ Feature: Test visibility control of menu items
 
     @javascript
     Scenario: audience members see only the menu items they are configured to see
-      Given the following "users" exist:
+      Given I am on a totara site
+      And the following "users" exist:
         | username | firstname | lastname | email               |
         | user1    | User      | One      | one@totaralms.com   |
         | user2    | User      | Two      | two@totaralms.com   |

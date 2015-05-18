@@ -224,6 +224,7 @@ $string['customfieldnotexist'] = 'custom field {$a->shortname} does not exist (t
 $string['cannotdeleteuserx'] = 'cannot delete user {$a}';
 $string['deleteduserx'] = 'deleted user {$a}';
 $string['syncaborted'] = 'HR Import aborted';
+$string['cannotupdatedeleteduserx'] = 'cannot undelete user {$a}';
 $string['cannotupdateuserx'] = 'cannot update user {$a}';
 $string['cannotsetuserpassword'] = 'cannot set user password (user:{$a})';
 $string['cannotsetuserpasswordnoauthsupport'] = 'cannot set user password (user:{$a}), auth plugin does not support password changes';

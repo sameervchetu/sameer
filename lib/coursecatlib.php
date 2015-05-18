@@ -886,7 +886,7 @@ class coursecat implements renderable, cacheable_object, IteratorAggregate {
         }
 
         // Add audience visibility setting.
-        $userid = !empty($options['userid']) ? $options['userid'] : $USER->id;
+        $userid = !empty($params['userid']) ? $params['userid'] : $USER->id;
         list($visibilitysql, $visibilityparams) = totara_visibility_where($userid, 'c.id', 'c.visible', 'c.audiencevisible');
         $visibilitysql = "AND {$visibilitysql}";
         $params = array_merge($params, $visibilityparams);

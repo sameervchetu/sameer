@@ -25,6 +25,7 @@
 class block_mentees extends block_base {
 
     function init() {
+        $this->blockname = get_class($this);
         $this->title = get_string('pluginname', 'block_mentees');
     }
 
@@ -33,7 +34,7 @@ class block_mentees extends block_base {
     }
 
     function specialization() {
-        $this->title = isset($this->config->title) ? $this->config->title : get_string('newmenteesblock', 'block_mentees');
+        $this->title = isset($this->config->title) ? $this->config->title : '';
     }
 
     function instance_allow_multiple() {

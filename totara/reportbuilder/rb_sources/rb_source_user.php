@@ -85,13 +85,13 @@ class rb_source_user extends rb_base_source {
                 REPORT_BUILDER_RELATION_ONE_TO_ONE
             ),
             new rb_join(
-                'totara_stats_courses_started',
+                'course_completions_courses_started',
                 'LEFT',
-                "(SELECT userid, COUNT(DISTINCT data2) as number
-                    FROM {block_totara_stats}
-                    WHERE eventtype = 2
+                "(SELECT userid, COUNT(id) as number
+                    FROM {course_completions}
+                    WHERE timestarted > 0 OR timecompleted > 0
                     GROUP BY userid)",
-                'base.id = totara_stats_courses_started.userid',
+                'base.id = course_completions_courses_started.userid',
                 REPORT_BUILDER_RELATION_ONE_TO_ONE
             ),
             new rb_join(
@@ -193,10 +193,10 @@ class rb_source_user extends rb_base_source {
                         'statistics',
                         'coursesstarted',
                         get_string('userscoursestartedcount', 'rb_source_user'),
-                        'totara_stats_courses_started.number',
+                        'course_completions_courses_started.number',
                         array(
                             'displayfunc' => 'count',
-                            'joins' => 'totara_stats_courses_started',
+                            'joins' => 'course_completions_courses_started',
                             'dbdatatype' => 'integer',
                         )
         );

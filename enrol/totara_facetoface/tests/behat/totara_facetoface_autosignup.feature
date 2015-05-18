@@ -5,7 +5,8 @@ Feature: Users can enrol on courses that have autosignup enabled and get signed 
   I need to sign up to seminars when enrolling on the course
 
   Background:
-    Given the following "users" exist:
+    Given I am on a totara site
+    And the following "users" exist:
       | username | firstname | lastname | email |
       | teacher1 | Teacher | 1 | teacher1@asd.com |
       | student1 | Student | 1 | student1@asd.com |

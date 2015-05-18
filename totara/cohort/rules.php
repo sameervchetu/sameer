@@ -115,9 +115,19 @@ $mform = new cohort_rules_form(qualified_me(), $customdata, 'post');
 // Rule changes approval/cancelation
 if (($data = data_submitted()) && confirm_sesskey()) {
     if ($canapproverules && !empty($data->approverulechanges)) {
+        // This may take a long time, we do want to finish this even if user goes to different page.
+        ignore_user_abort(true);
+        core_php_time_limit::raise(60 * 30);
+        \core\session\manager::write_close();
+
         if (!cohort_rules_approve_changes($cohort)) {
             print_error('error:couldnotapprovechanges', 'totara_cohort');
         }
+
+        // The changes in cohort enrolments are not triggered automatically via events, let's hardcode it here for now.
+        require_once("$CFG->dirroot/enrol/cohort/locallib.php");
+        enrol_cohort_sync(new null_progress_trace(), null);
+
         // Set notification.
         totara_set_notification(get_string('rulesapprovesuccess', 'totara_cohort'), $url->out(), array('class' => 'notifysuccess'));
     }

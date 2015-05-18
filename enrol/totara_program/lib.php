@@ -111,7 +111,7 @@ class enrol_totara_program_plugin extends enrol_plugin {
      * @return bool|int false means not enrolled, integer means timeend
      */
     public function try_autoenrol(stdClass $instance) {
-        global $CFG, $OUTPUT, $USER, $DB;
+        global $CFG, $USER, $DB;
 
         if ($course = $DB->get_record('course', array('id' => $instance->courseid))) {
             //because of use of constants and program class functions, best to leave the prog_can_enter_course function where it is
@@ -126,13 +126,8 @@ class enrol_totara_program_plugin extends enrol_plugin {
                     $a->program = $result->program;
                     require_once($CFG->dirroot . '/course/lib.php');
                     $courseformat = course_get_format($course);
-                    if ($courseformat->get_format() == 'singleactivity') {
-                        $viewurl =  new moodle_url('/course/view.php', array('id' => $course->id));
-                        $a->url = $viewurl->out();
-                        totara_set_notification($OUTPUT->container(get_string('nowenrolledcontinue', 'enrol_totara_program', $a), 'plan_box'), null, array('class' => 'notifysuccess'));
-                    } else {
-                        totara_set_notification($OUTPUT->container(get_string('nowenrolled', 'enrol_totara_program', $a), 'plan_box'), null, array('class' => 'notifysuccess'));
-                    }
+                    $viewurl = new moodle_url('/course/view.php', array('id' => $course->id));
+                    totara_set_notification(get_string('nowenrolled', 'enrol_totara_program', $a), $viewurl->out(), array('class' => 'notifysuccess'));
                 }
                 //return 0 sets enrolment with no time limit
                 return 0;
@@ -218,7 +213,8 @@ class enrol_totara_program_plugin extends enrol_plugin {
         }
 
         if ($enrol) {
-            $this->enrol_user($instance, $userid, null, $data->timestart, $data->timeend, $data->status);
+            $defaultrole = $this->get_config('roleid');
+            $this->enrol_user($instance, $userid, $defaultrole, $data->timestart, $data->timeend, $data->status);
         }
     }
 

@@ -1941,16 +1941,19 @@ class hierarchy {
         $showcustomfields = ($framework->hidecustomfields != 1);
         $params = array();
 
-        $select = "SELECT hierarchy.id, hierarchy.fullname as hierarchyname, type.fullname as typename, hierarchy.depthlevel";
+        $select = "SELECT hierarchy.id, hierarchy.idnumber as hierarchyidnumber, hierarchy.fullname as hierarchyname, type.fullname as typename, hierarchy.depthlevel";
         $count = "SELECT COUNT(hierarchy.id)";
         $from   = " FROM {{$this->shortprefix}} hierarchy LEFT JOIN {{$this->shortprefix}_type} type ON hierarchy.typeid = type.id";
         $where  = " WHERE frameworkid = ?";
         $order  = " ORDER BY sortthread";
 
         if ($searchactive) {
-            $headings = array('hierarchyname' => get_string('name'), 'typename' => get_string('type','totara_hierarchy'));
+            $headings = array('hierarchyidnumber' => get_string($this->prefix.'frameworkidnumber','totara_hierarchy'),
+                'hierarchyname' => get_string('name'),
+                'typename' => get_string('type','totara_hierarchy'));
         } else {
-            $headings = array('typename' => get_string('type', 'totara_hierarchy'));
+            $headings = array('hierarchyidnumber' => get_string($this->prefix.'frameworkidnumber','totara_hierarchy'),
+                'typename' => get_string('type', 'totara_hierarchy'));
         }
         //Add custom field data to select only if customfields are being shown
         if ($showcustomfields) {

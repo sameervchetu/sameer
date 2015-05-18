@@ -104,6 +104,7 @@ if (!dp_can_view_users_plans($plan->userid)) {
 if (!empty($approve)) {
     if (in_array($plan->get_setting('approve'), array(DP_PERMISSION_ALLOW, DP_PERMISSION_APPROVE))) {
        $plan->set_status(DP_PLAN_STATUS_APPROVED, DP_PLAN_REASON_MANUAL_APPROVE, $reasonfordecision);
+       \totara_plan\event\approval_approved::create_from_plan($plan)->trigger();
        $plan->send_approved_alert($reasonfordecision);
        totara_set_notification(get_string('planapproved', 'totara_plan', $plan->name), $referer, array('class' => 'notifysuccess'));
     } else {
@@ -120,8 +121,9 @@ if (!empty($approve)) {
 if (!empty($decline)) {
     if (in_array($plan->get_setting('approve'), array(DP_PERMISSION_ALLOW, DP_PERMISSION_APPROVE))) {
         $plan->set_status(DP_PLAN_STATUS_UNAPPROVED, DP_PLAN_REASON_MANUAL_DECLINE, $reasonfordecision);
+        \totara_plan\event\approval_declined::create_from_plan($plan)->trigger();
         $plan->send_declined_alert($reasonfordecision);
-        add_to_log(SITEID, 'plan', 'declined', "view.php?id={$plan->id}", $plan->name);
+
         totara_set_notification(get_string('plandeclined', 'totara_plan', $plan->name), $referer, array('class' => 'notifysuccess'));
     } else {
         if (empty($ajax)) {
@@ -135,6 +137,7 @@ if (!empty($decline)) {
 if (!empty($activate)) {
     if (in_array($plan->get_setting('approve'), array(DP_PERMISSION_ALLOW, DP_PERMISSION_APPROVE))) {
         $plan->set_status(DP_PLAN_STATUS_APPROVED, DP_PLAN_REASON_MANUAL_APPROVE, null);
+        \totara_plan\event\approval_approved::create_from_plan($plan)->trigger();
         $plan->send_activated_alert();
         totara_set_notification(get_string('planactivated', 'totara_plan', $plan->name), $referer, array('class' => 'notifysuccess'));
     } else if (empty($ajax)) {
@@ -168,7 +171,8 @@ if (!empty($approvalrequest)) {
                     if (empty($duplicates)) {
                         //only send email/task if there is not already one for that learning plan
                         $plan->send_manager_plan_approval_request();
-                        add_to_log(SITEID, 'plan', 'requested approval', "view.php?id={$plan->id}", $plan->name);
+                    } else {
+                        $plan->set_status(DP_PLAN_STATUS_PENDING, DP_PLAN_REASON_APPROVAL_REQUESTED);
                     }
                 }
                 else {
@@ -247,7 +251,6 @@ if (!empty($delete)) {
                 // Someone else was deleting the learner's plan, notify the learner
                 $plan->send_alert(true,'learningplan-remove','plan-remove-learner-short','plan-remove-learner-long');
             }
-            add_to_log(SITEID, 'plan', 'deleted', "index.php?userid={$plan->userid}", "{$plan->name} (ID:{$plan->id})");
             totara_set_notification(get_string('plandeletesuccess', 'totara_plan', $plan->name), $referer, array('class' => 'notifysuccess'));
         }
     } else {
@@ -280,8 +283,8 @@ if (!empty($complete)) {
         } else {
             // Set plan status to complete
             $plan->set_status(DP_PLAN_STATUS_COMPLETE, DP_PLAN_REASON_MANUAL_COMPLETE);
+            \totara_plan\event\plan_completed::create_from_plan($plan)->trigger();
             $plan->send_completion_alert();
-            add_to_log(SITEID, 'plan', 'completed', "view.php?id={$plan->id}", $plan->name);
             totara_set_notification(get_string('plancompletesuccess', 'totara_plan', $plan->name), $referer, array('class' => 'notifysuccess'));
         }
     } else {
@@ -319,7 +322,7 @@ if (!empty($reactivate)) {
             if (!$plan->reactivate_plan($new_date)) {
                 totara_set_notification(get_string('planreactivatefail', 'totara_plan', $plan->name), $referer);
             } else {
-                add_to_log(SITEID, 'plan', 'reactivated', "view.php?id={$plan->id}", $plan->name);
+                 \totara_plan\event\plan_reactivated::create_from_plan($plan)->trigger();
                 totara_set_notification(get_string('planreactivatesuccess', 'totara_plan', $plan->name), $referer, array('class' => 'notifysuccess'));
             }
         }

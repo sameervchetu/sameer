@@ -412,7 +412,7 @@ abstract class prog_message {
         // Add the message subject
         $safe_messagesubject = format_string($this->messagesubject);
         if ($updateform) {
-            $mform->addElement('text', $prefix.'messagesubject', '', array('size'=>'50', 'maxlength'=>'255'));
+            $mform->addElement('text', $prefix.'messagesubject', '', array('size'=>'50', 'maxlength'=>'255', 'id'=>$prefix.'messagesubject'));
             $mform->setType($prefix.'messagesubject', PARAM_TEXT);
             $template_values['%'.$prefix.'messagesubject%'] = array('name'=>$prefix.'messagesubject', 'value'=>null);
         }
@@ -426,7 +426,7 @@ abstract class prog_message {
         // Add the main message
         $safe_mainmessage = format_string($this->mainmessage);
         if ($updateform) {
-            $mform->addElement('textarea', $prefix.'mainmessage', '', array('cols'=>'40', 'rows'=>'5'));
+            $mform->addElement('textarea', $prefix.'mainmessage', '', array('cols'=>'40', 'rows'=>'5', 'id'=>$prefix.'mainmessage'));
             $mform->setType($prefix.'mainmessage', PARAM_TEXT);
             $template_values['%'.$prefix.'mainmessage%'] = array('name'=>$prefix.'mainmessage', 'value'=>null);
         }
@@ -468,7 +468,7 @@ abstract class prog_message {
         }
         $helpbutton = $OUTPUT->help_icon('notifymanager', 'totara_program');
         $templatehtml .= html_writer::start_tag('div', array('class' => 'fline'));
-        $templatehtml .= html_writer::tag('div', html_writer::tag('label', get_string('label:sendnoticetomanager', 'totara_program') . ' ' . $helpbutton, array('for' => $prefix.'notifymanager')), array('class' => 'flabel'));
+        $templatehtml .= html_writer::tag('div', html_writer::tag('label', get_string('label:sendnoticetomanager', 'totara_program') . ' ' . $helpbutton, array('for' => 'id_' . $prefix . 'notifymanager')), array('class' => 'flabel'));
         $templatehtml .= html_writer::tag('div', '%'.$prefix.'notifymanager%', array('class' => 'fitem'));
         $templatehtml .= html_writer::end_tag('div');
         $formdataobject->{$prefix.'notifymanager'} = (bool)$this->notifymanager;
@@ -476,14 +476,14 @@ abstract class prog_message {
         // Add the manager message
         $safe_managermessage = format_string($this->managermessage);
         if ($updateform) {
-            $mform->addElement('textarea', $prefix.'managermessage', $safe_managermessage, array('cols'=>'40', 'rows'=>'5'));
+            $mform->addElement('textarea', $prefix.'managermessage', $safe_managermessage, array('cols'=>'40', 'rows'=>'5', 'id' => $prefix . 'managermessage'));
             //$mform->disabledIf($prefix.'managermessage', $prefix.'notifymanager', 'notchecked');
             $mform->setType($prefix.'managermessage', PARAM_TEXT);
             $template_values['%'.$prefix.'managermessage%'] = array('name'=>$prefix.'managermessage', 'value'=>null);
         }
         $helpbutton = $OUTPUT->help_icon('managermessage', 'totara_program');
         $templatehtml .= html_writer::start_tag('div', array('class' => 'fline'));
-        $templatehtml .= html_writer::tag('div', html_writer::tag('label', get_string('label:noticeformanager', 'totara_program') . ' ' . $helpbutton, array('for' => $prefix.'managermessage')), array('class' => 'flabel'));
+        $templatehtml .= html_writer::tag('div', html_writer::tag('label', get_string('label:noticeformanager', 'totara_program') . ' ' . $helpbutton, array('for' => $prefix . 'managermessage')), array('class' => 'flabel'));
         $templatehtml .= html_writer::tag('div', '%'.$prefix.'managermessage%', array('class' => 'fitem'));
         $templatehtml .= html_writer::end_tag('div');
         $formdataobject->{$prefix.'managermessage'} = $safe_managermessage;
@@ -509,13 +509,13 @@ abstract class prog_message {
         // Add the trigger period selection group
         if ($updateform) {
 
-            $mform->addElement('text', $prefix.'triggernum', '', array('size'=>4, 'maxlength'=>3));
+            $mform->addElement('text', $prefix.'triggernum', '', array('size'=>4, 'maxlength'=>3, 'id' => $prefix.'triggernum'));
             $mform->setType($prefix.'triggernum', PARAM_INT);
             $mform->setDefault($prefix.'triggernum', '1');
             //$mform->addRule($prefix.'triggernum', get_string('required'), 'required', null, 'server');
 
             $timeallowanceoptions = program_utilities::get_standard_time_allowance_options();
-            $mform->addElement('select', $prefix.'triggerperiod', '', $timeallowanceoptions);
+            $mform->addElement('select', $prefix.'triggerperiod', '', $timeallowanceoptions, array('id' => $prefix.'triggerperiod'));
             $mform->setType($prefix.'triggerperiod', PARAM_INT);
 
             $template_values['%'.$prefix.'triggernum%'] = array('name'=>$prefix.'triggernum', 'value'=>null);
@@ -524,7 +524,10 @@ abstract class prog_message {
         $helpbutton = $OUTPUT->help_icon('trigger', 'totara_program');
         $templatehtml .= html_writer::start_tag('div', array('class' => 'fline'));
         $templatehtml .= html_writer::tag('div', html_writer::tag('label', get_string('label:trigger', 'totara_program') . ' ' . $helpbutton, array('for' => $prefix.'triggernum')), array('class' => 'flabel'));
-        $templatehtml .= html_writer::tag('div', '%'.$prefix.'triggernum% %' . $prefix . 'triggerperiod% ' . $this->triggereventstr, array('class' => 'fitem'));
+        $templatehtml .= html_writer::start_tag('div', array('class' => 'fitem'));
+        $templatehtml .= '%'.$prefix.'triggernum% %' . $prefix . 'triggerperiod% ';
+        $templatehtml .= html_writer::tag('label', $this->triggereventstr, array('for' => $prefix.'triggerperiod'));
+        $templatehtml .= html_writer::end_tag('div');
         $templatehtml .= html_writer::end_tag('div');
         $formdataobject->{$prefix.'triggernum'} = $this->triggernum;
         $formdataobject->{$prefix.'triggerperiod'} = $this->triggerperiod;

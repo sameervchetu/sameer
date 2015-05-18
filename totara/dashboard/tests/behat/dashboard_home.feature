@@ -5,7 +5,8 @@ Feature: test default home page feature with dashboards
   As a student I log in
 
   Background:
-    Given the following "users" exist:
+    Given I am on a totara site
+    And the following "users" exist:
       | username | firstname | lastname | email |
       | student1 | Student | One | student.one@local.host |
     And the following "cohorts" exist:

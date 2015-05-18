@@ -75,22 +75,21 @@ class block_totara_alerts_renderer extends plugin_renderer_base {
         $cssclass = totara_message_cssclass($alert->msgtype);
         $msglink = !empty($alert->contexturl) ? $alert->contexturl : '';
         $output .= html_writer::start_tag('li', array('class' => $cssclass));
-        if (!empty($msglink)) {
-            $url = new moodle_url($msglink);
-            $output .= html_writer::start_tag('a', array('href' => $url));
-        }
 
         $icon = $this->pix_icon(
             'msgicons/' . $alert->icon, format_string($alert->subject),
             'totara_core',
-            array('class' => "msgicon {$cssclass}", 'alt'=>format_string($alert->subject))
+            array('class' => "msgicon {$cssclass}", 'alt' => '')
         );
-
         $output .= $icon;
 
         $text = format_string($alert->subject ? $alert->subject : $alert->fullmessage);
-        $output .= html_writer::tag('span', $text);
-        $output .= html_writer::end_tag('a');
+        if (!empty($msglink)) {
+            $url = new moodle_url($msglink);
+            $output .= html_writer::tag('a', $text, array('href' => $url));
+        } else {
+            $output .= html_writer::tag('span', $text);
+        }
 
         $moreinfotext = get_string('clickformoreinfo', 'block_totara_alerts');
         $icon = $this->pix_icon('i/info', $moreinfotext, 'moodle', array('class'=>'informationicon', 'title' => $moreinfotext, 'alt' => $moreinfotext));

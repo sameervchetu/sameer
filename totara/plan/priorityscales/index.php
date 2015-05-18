@@ -106,6 +106,9 @@ if ($delete) {
 
         $DB->delete_records('dp_priority_scale_value', array('priorityscaleid' => $scale->id)); // Delete scale values
         $DB->delete_records('dp_priority_scale', array('id' => $scale->id)); // Delete scale itself
+
+        \totara_plan\event\priority_scale_deleted::create_from_scale($scale)->trigger();
+
         totara_set_notification(get_string('deletedpriorityscale', 'totara_plan', format_string($scale->name)), $CFG->wwwroot.'/totara/plan/priorityscales/index.php', array('class' => 'notifysuccess'));
 
     } else {

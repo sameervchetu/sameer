@@ -70,7 +70,12 @@ class totara_appraisal_observer {
         $events = $DB->get_records_sql($sql, $params);
         foreach ($events as $id => $eventdata) {
             $eventmessage = new appraisal_message($id);
-            self::process_event($eventmessage, $time);
+            if ($eventmessage->is_immediate() && $eventmessage->type == appraisal_message::EVENT_APPRAISAL_ACTIVATION) {
+                $eventmessage->send_appraisal_wide_message();
+            } else {
+                $eventmessage->schedule($eventmessage->get_schedule_from($time));
+                $eventmessage->save();
+            }
         }
     }
 
@@ -86,29 +91,22 @@ class totara_appraisal_observer {
 
         $time = $event->other['time'];
         $stageid = $event->other['stageid'];
-        $sql = "SELECT id FROM {appraisal_event} WHERE triggered = 0 AND event = ? AND appraisalstageid = ?";
+        $sql = "SELECT id FROM {appraisal_event} WHERE event = ? AND appraisalstageid = ?";
         $params = array(appraisal_message::EVENT_STAGE_COMPLETE, $stageid);
         $events = $DB->get_records_sql($sql, $params);
         foreach ($events as $id => $eventdata) {
-            self::process_event(new appraisal_message($id), $time);
+            $eventmessage = new appraisal_message($id);
+            if ($eventmessage->is_immediate()) {
+                $eventmessage->send_user_specific_message($event->userid);
+            } else {
+                $newuserevent = new stdClass();
+                $newuserevent->eventid = $id;
+                $newuserevent->userid = $event->userid;
+                $newuserevent->timescheduled = $eventmessage->get_schedule_from($time);
+                $DB->insert_record('appraisal_user_event', $newuserevent);
+            }
         }
     }
-
-    /**
-     * Send or schedule messages according time and settings
-     *
-     * @param appraisal_message $event
-     * @param int $time
-     */
-    protected static function process_event(appraisal_message $event, $time) {
-        if ($event->is_immediate()) {
-            $event->send();
-        } else {
-            $event->schedule($event->get_schedule_from($time));
-            $event->save();
-        }
-    }
-
 
     /**
      * Get's all scheduled untriggered messages and send's them
@@ -120,6 +118,7 @@ class totara_appraisal_observer {
 
         require_once($CFG->dirroot . '/totara/appraisal/lib.php'); // We should move all the classes into self loading ones.
 
+        // First do scheduled messages that go to the whole appraisal.
         $sql = "SELECT ae.id
                 FROM {appraisal_event} ae JOIN {appraisal} a ON (ae.appraisalid = a.id)
                 WHERE a.status = ? AND timescheduled > 0 AND triggered = 0";
@@ -127,7 +126,23 @@ class totara_appraisal_observer {
         foreach ($events as $id => $eventdata) {
             $event = new appraisal_message($id);
             if ($event->is_time($time)) {
-                $event->send();
+                $event->send_appraisal_wide_message();
+            }
+        }
+
+        // Then do scheduled messages that go to specific users.
+        // Timescheduled in aue must always be set and triggered in ae is not relevant to these events.
+        $sql = "SELECT ae.id, aue.userid, aue.timescheduled
+                  FROM {appraisal_event} ae
+                  JOIN {appraisal} a ON ae.appraisalid = a.id
+                  JOIN {appraisal_user_event} aue ON aue.eventid = ae.id
+                 WHERE a.status = ?";
+        $userevents = $DB->get_records_sql($sql, array(appraisal::STATUS_ACTIVE));
+        foreach ($userevents as $userevent) {
+            $event = new appraisal_message($userevent->id);
+            $event->schedule($userevent->timescheduled); // Use user-specific timescheduled for is_time calculation.
+            if ($event->is_time($time)) {
+                $event->send_user_specific_message($userevent->userid);
             }
         }
     }

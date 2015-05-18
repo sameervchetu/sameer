@@ -190,7 +190,7 @@ class customfield_define_base {
         $data = $this->define_save_preprocess($data, $old); // Hook for child classes.
         if (!$old) {
             $data->sortorder = $DB->count_records_select($tableprefix.'_info_field', '') + 1;
-            } else {
+        } else {
             $data->sortorder = $old->sortorder;
         }
 

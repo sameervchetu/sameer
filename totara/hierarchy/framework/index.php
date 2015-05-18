@@ -194,7 +194,9 @@ if ($cancreateframeworks) {
 
 if ($canviewframeworks) {
     if ($frameworks) {
+        echo html_writer::start_tag('div', array('id' => 'frameworkstable'));
         echo html_writer::table($table);
+        echo html_writer::end_tag('div');
     } else {
         echo html_writer::tag('p', get_string($prefix.'noframeworks', 'totara_hierarchy'));
         echo html_writer::empty_tag('br');

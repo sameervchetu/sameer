@@ -93,7 +93,7 @@ class enrol_totara_facetoface_signup_form extends moodleform {
             $f2fids[$session->facetoface] = $session->facetoface;
         }
         list($idin, $params) = $DB->get_in_or_equal($f2fids);
-        $facetofaces = $DB->get_records_select('facetoface', "ID $idin", $params);
+        $facetofaces = $DB->get_records_select('facetoface', "id $idin", $params);
 
         if (!empty($instance->$settingautosignup)) {
             $sessionsavailable = true;

@@ -109,20 +109,28 @@ if ($mform->is_cancelled()) {
         if (count($priorityidlist)) {
             $prioritynew->defaultid = $priorityidlist[count($priorityidlist)-1];
             $prioritynew->proficient = $priorityidlist[0];
-            $DB->update_record('dp_priority_scale', $prioritynew);
         }
-        $notification = get_string('priorityscaleadded', 'totara_plan', format_string($prioritynew->name));
+
+        $prioritynew = file_postupdate_standard_editor($prioritynew, 'description', $TEXTAREA_OPTIONS, $TEXTAREA_OPTIONS['context'], 'totara_plan', 'dp_priority_scale', $prioritynew->id);
+        $DB->update_record('dp_priority_scale', $prioritynew);
         $transaction->allow_commit();
+
+        $prioritynew = $DB->get_record('dp_priority_scale', array('id' => $prioritynew->id));
+        \totara_plan\event\priority_scale_created::create_from_scale($prioritynew)->trigger();
+
+        $notification = get_string('priorityscaleadded', 'totara_plan', format_string($prioritynew->name));
+
     } else {
         // Existing priority
+        $prioritynew = file_postupdate_standard_editor($prioritynew, 'description', $TEXTAREA_OPTIONS, $TEXTAREA_OPTIONS['context'], 'totara_plan', 'dp_priority_scale', $prioritynew->id);
         $DB->update_record('dp_priority_scale', $prioritynew);
-        add_to_log(SITEID, 'priorityscales', 'updated', "view.php?id=$prioritynew->id");
+
+        $prioritynew = $DB->get_record('dp_priority_scale', array('id' => $prioritynew->id));
+        \totara_plan\event\priority_scale_updated::create_from_scale($prioritynew)->trigger();
+
         $notification = get_string('priorityscaleupdated', 'totara_plan', format_string($prioritynew->name));
     }
-    $prioritynew = file_postupdate_standard_editor($prioritynew, 'description', $TEXTAREA_OPTIONS, $TEXTAREA_OPTIONS['context'], 'totara_plan', 'dp_priority_scale', $prioritynew->id);
-    $DB->set_field('dp_priority_scale', 'description', $prioritynew->description, array('id' => $prioritynew->id));
-    // Log
-    add_to_log(SITEID, 'priorityscales', 'added', "view.php?id=$prioritynew->id");
+
     totara_set_notification($notification,
         "$CFG->wwwroot/totara/plan/priorityscales/view.php?id={$prioritynew->id}",
         array('class' => 'notifysuccess'));

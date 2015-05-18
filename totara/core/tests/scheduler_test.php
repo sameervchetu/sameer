@@ -80,6 +80,14 @@ class scheduler_test extends PHPUnit_Framework_TestCase {
             array(scheduler::MONTHLY, 29, 1394041665, 1394041665, 1396051200),
             array(scheduler::MONTHLY, 1, 1394041665, 1394041665, 1396310400),
             array(scheduler::MONTHLY, 5, 1394041665, 1394041665, 1393977600),
+            array(scheduler::HOURLY, 1, 1427346000, 1427346793, 1427349600),
+            array(scheduler::HOURLY, 1, 1427410800, 1427410800, 1427414400),
+            array(scheduler::HOURLY, 8, 1427446800, 1427454000, 1427472000),
+            array(scheduler::HOURLY, 8, 1427472000, 1427472000, 1427500800),
+            array(scheduler::MINUTELY, 1, 1427559300, 1427559300, 1427559360),
+            array(scheduler::MINUTELY, 1, 1427561940, 1427561940, 1427562000),
+            array(scheduler::MINUTELY, 15, 1427556600, 1427556665, 1427557500),
+            array(scheduler::MINUTELY, 15, 1427557500, 1427557500, 1427558400),
         );
         return $data;
     }

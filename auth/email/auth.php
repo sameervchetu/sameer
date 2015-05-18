@@ -102,6 +102,9 @@ class auth_plugin_email extends auth_plugin_base {
         // Save any custom profile field information.
         profile_save_data($user);
 
+        // Totara: We need to update primary position fields here.
+        position_save_data($user);
+
         // Trigger event.
         \core\event\user_created::create_from_userid($user->id)->trigger();
 

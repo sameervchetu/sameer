@@ -6,9 +6,12 @@ point release version. For upgrading a Moodle site see MOODLEUPGRADE.txt.
 
 New requirements in Totara 2.7:
 
-* PHP version 5.4.4 required.
+* PHP version 5.4.4 now required (was 5.3.3 in Totara 2.6).
 * PHP zlib and OPcache modules now recommended.
-* MSSQL only: Database user requires additional permissions: ALTER SETTINGS(SERVER)
+* MSSQL only: Database user requires additional permissions: ALTER SETTINGS(SERVER).
+* MSSQL 2008 now required (was 2005 in Totara 2.6).
+* Postgres 9.1 now required (was 8.3 in Totara 2.6).
+* MySQL 5.5.31 now required (was 5.1.33 in Totara 2.6).
 * MariaDB 5.5.31 now required (was 5.3.5 in Totara 2.6).
 
 NOTE: To upgrade to Totara 2.7 you must be on Totara 2.2.22 or later. If your version

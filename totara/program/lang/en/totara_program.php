@@ -212,6 +212,7 @@ $string['createandreturn'] = 'Create and return to overview';
 $string['createcourse'] = 'Create course';
 $string['createnewprogram'] = 'Create new program';
 $string['createprogram'] = 'Create program';
+$string['criteriacompletioncourseset'] = 'Criteria completion for this course set is based on: {$a}';
 $string['currentduedate'] = 'Current due date';
 $string['currenticon'] = 'Current icon';
 $string['currentlyassigned'] = 'User already assigned to program via learning plan';
@@ -545,7 +546,7 @@ $string['minimumscore_help'] = 'A minimum score that must be reached for the cou
 
 For example, you might have a “Credits” custom field on your courses, so you could use this setting to mark a course set as complete when a certain number of credits have been achieved.';
 $string['minimumtimerequired'] = 'Minimum time required';
-$string['minimumtimerequired_help'] = 'This value indicates a minimum amount of time that a user might realistically be able to complete the course set. It is used to determine if the completion period set on the "assignments" tab is realistic for a particular group of users. If the assignment is not realistic, a "time allowance" exception will be generated and the user will not be assigned to the program until the exception has been resolved.
+$string['minimumtimerequired_help'] = 'This value indicates a minimum amount of time that a user might realistically need to be able to complete the course set. It is used to determine if the completion period set on the "assignments" tab is realistic for a particular group of users. If the assignment is not realistic, a "time allowance" exception will be generated and the user will not be assigned to the program until the exception has been resolved.
 
 For example, consider a program consisting of a single course set with a minimum time required of 10 days. If a user was assigned with completion criteria that required them to complete it in less than 10 days, then it would raise an exception report for that user.
 
@@ -555,9 +556,7 @@ When multiple course sets exist in a program the overall minimum time required f
 
 Course set1 [10 days] THEN Course set2 [5 days] OR Course set3 [7 days]
 
-then the overall time allowance would be 17 days.
-
-Enter zero if no time limit is required';
+then the overall time allowance would be 17 days.';
 $string['minprogramtimerequired'] = 'Programs total minimum time required: ';
 $string['missingshortname'] = 'Missing short name';
 $string['months'] = 'Month(s)';
@@ -575,6 +574,7 @@ $string['nocoursecontent'] = 'No course content.';
 $string['nocourses'] = 'No courses';
 $string['noduedate'] = 'No due date';
 $string['noextensions'] = 'You have no staff who have pending extension requests';
+$string['nominimumtime'] = 'No minimum time';
 $string['noprogramassignments'] = 'Program does not contain any assignments';
 $string['noprogramcontent'] = 'Program does not contain any content';
 $string['noprogramexceptions'] = 'No exceptions';
@@ -794,6 +794,7 @@ $string['therearenoprogramstodisplay'] = 'There are no programs to display.';
 $string['thisactioncannotbeundone'] = 'This action cannot be undone';
 $string['thiswillaffect'] = 'This will affect {$a} learners';
 $string['timeallowance'] = 'Time allowance';
+$string['timeperiod'] = 'Time period';
 $string['toprogram'] = 'to program';
 $string['tosaveassignments'] = 'To save all assignment changes click \'Save all changes\'. To edit assignment changes click \'Edit assignments\'. Saving assignments cannot be undone.';
 $string['tosavecontent'] = 'To save content changes click \'Save all changes\'. To edit content changes click \'Edit content\'. Saving content changes cannot be undone.';

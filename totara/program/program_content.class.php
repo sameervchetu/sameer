@@ -913,8 +913,8 @@ class prog_content {
         }
 
         if ($iscertif) {
-            $templatehtml .= html_writer::start_tag('fieldset', array('id' => 'programcontent'));
-            $templatehtml .= html_writer::start_tag('legend', array('class' => 'ftoggler', 'id' => 'certifpath'))
+            $templatehtml .= html_writer::start_tag('fieldset', array('id' => 'programcontent'.$suffix));
+            $templatehtml .= html_writer::start_tag('legend', array('class' => 'ftoggler', 'id' => 'certifpath'.$suffix))
                 . get_string(($certifpath == CERTIFPATH_CERT ? 'oricertpath' : 'recertpath'), 'totara_certification')
                 . html_writer::end_tag('legend');
             $templatehtml .= html_writer::start_tag('p')
@@ -923,15 +923,14 @@ class prog_content {
 
             if ($certifpath == CERTIFPATH_RECERT && $numcoursesets == 0) {
                 // ask for cert content to be copied to recert
-                $mform->addElement('advcheckbox', 'sameascert'.$suffix, get_string('sameascert', 'totara_certification'),
-                                '', array('disabled' => 'disabled', 'group' => 'sameascertgrp'), array(0, 1));
+                $label = get_string('sameascert', 'totara_certification');
+                $mform->addElement('advcheckbox', 'sameascert'.$suffix, $label, $label,
+                                array('disabled' => 'disabled', 'group' => 'sameascertgrp'), array(0, 1));
                 // 5th param: set disabled initially (have to add (redundent) group else get error)
                 // 6th param: checkbox settings, first value is default
                 $mform->setType('sameascert'.$suffix, PARAM_INT);
                 $template_values['%sameascert'.$suffix.'%'] = array('name'=>'sameascert'.$suffix, 'value' => 0);
 
-                $templatehtml .= html_writer::start_tag('label', array('for' => 'sameascert'.$suffix))
-                                . get_string('sameascert', 'totara_certification') . html_writer::end_tag('label');
                 $templatehtml .= '%sameascert'.$suffix.'%';
             }
         }
@@ -1023,6 +1022,10 @@ class prog_content {
                 $helpbutton = $OUTPUT->help_icon('addprogramcontent', 'totara_program');
             }
             $templatehtml .= $helpbutton;
+        }
+
+        if ($iscertif) {
+            $templatehtml .= html_writer::end_tag('fieldset');
         }
 
         $templatehtml .= html_writer::empty_tag('br');

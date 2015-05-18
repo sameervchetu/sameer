@@ -74,26 +74,30 @@ if ($mform->is_cancelled()) {
         // New type, so add to the end of the list
         $action = 'added';
         $data->sortorder = 1 + $DB->get_field_sql("SELECT MAX(sortorder) FROM {dp_evidence_type}");
-        if (!$data->id = $DB->insert_record('dp_evidence_type', $data)) {
-            print_error(get_string('error:createnewevidencetype', 'totara_plan'));
-        }
+        $data->id = $DB->insert_record('dp_evidence_type', $data);
+
+        // save and relink embedded images
+        $data = file_postupdate_standard_editor($data, 'description',
+            $TEXTAREA_OPTIONS, $TEXTAREA_OPTIONS['context'], 'totara_plan', 'dp_evidence_type', $data->id);
+        $DB->update_record('dp_evidence_type', $data);
+        $data = $DB->get_record('dp_evidence_type', array('id' => $data->id));
+
+        \totara_plan\event\evidence_type_created::create_from_type($data)->trigger();
+
     } else {
         $action = 'updated';
-        if (!$DB->update_record('dp_evidence_type', $data)) {
-            print_error('error:updateevidencetype', 'totara_plan');
-        }
-    }
-
-    // save and relink embedded images
-    $data = file_postupdate_standard_editor($data, 'description',
+        $data = file_postupdate_standard_editor($data, 'description',
             $TEXTAREA_OPTIONS, $TEXTAREA_OPTIONS['context'], 'totara_plan', 'dp_evidence_type', $data->id);
-    $DB->update_record('dp_evidence_type', $data);
+        $DB->update_record('dp_evidence_type', $data);
+        $data = $DB->get_record('dp_evidence_type', array('id' => $data->id));
+
+        \totara_plan\event\evidence_type_updated::create_from_type($data)->trigger();
+    }
 
     totara_set_notification(get_string('evidencetype'.$action, 'totara_plan',
             format_string(stripslashes($data->name))),
         new moodle_url('/totara/plan/evidencetypes/view.php', array('id' => $data->id)),
         array('class' => 'notifysuccess'));
-    add_to_log(SITEID, 'evidencetypes', $action, new moodle_url('view.php', array('id' => $data->id)));
 
 }
 

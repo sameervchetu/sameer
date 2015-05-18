@@ -324,7 +324,7 @@ class rb_source_cohort_associations extends rb_base_source {
         } else {
             $url = new moodle_url('/totara/program/view.php', array('id' => $row->insid));
         }
-        return html_writer::link($url, s($instancename));
+        return html_writer::link($url, format_string($instancename));
     }
 
     private function cohort_association_delete_link($associationid, $row) {

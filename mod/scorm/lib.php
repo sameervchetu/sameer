@@ -1490,7 +1490,7 @@ function scorm_set_completion($scorm, $userid, $completionstate = COMPLETION_COM
  * @param int $userid
  * @param int $courseid
  */
-function scorm_archive_completion($userid, $courseid) {
+function scorm_archive_completion($userid, $courseid, $windowopens = NULL) {
     global $DB, $CFG;
 
     require_once($CFG->libdir . '/completionlib.php');

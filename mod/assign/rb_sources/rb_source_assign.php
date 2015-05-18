@@ -62,7 +62,7 @@ class rb_source_assign extends rb_base_source {
             // Join assignment grade.
             new rb_join(
                 'assign_grades',
-                'INNER',
+                'LEFT',
                 '{assign_grades}',
                 'assign.id = assign_grades.assignment AND base.userid = assign_grades.userid',
                 REPORT_BUILDER_RELATION_ONE_TO_ONE,
@@ -99,10 +99,10 @@ class rb_source_assign extends rb_base_source {
                 'grade_items'
             ),
 
-            // Join comments.
+            // Join feedback comments.
             new rb_join(
                 'assign_comments',
-                'INNER',
+                'LEFT',
                 '{assignfeedback_comments}',
                 'assign_comments.assignment = assign.id AND assign_comments.grade = assign_grades.id',
                 REPORT_BUILDER_RELATION_ONE_TO_ONE,
@@ -179,11 +179,11 @@ class rb_source_assign extends rb_base_source {
                 )
             ),
 
-            // Submission comment.
+            // Feedback comment.
             new rb_column_option(
                 'base',
                 'comment',
-                get_string('submissioncomment', 'rb_source_assign'),
+                get_string('feedbackcomment', 'rb_source_assign'),
                 'assign_comments.commenttext',
                 array(
                     'joins' => 'assign_comments',
@@ -192,23 +192,22 @@ class rb_source_assign extends rb_base_source {
                 )
             ),
 
-            // Last modified.
+            // Submission last modified date.
             new rb_column_option(
                 'base',
                 'timemodified',
-                get_string('lastmodified', 'rb_source_assign'),
-                'assign_grades.timemodified',
+                get_string('lastmodifiedsubmission', 'rb_source_assign'),
+                'base.timemodified',
                 array(
-                    'displayfunc' => 'nice_datetime',
-                    'joins' => 'assign_grades'
+                    'displayfunc' => 'nice_datetime'
                 )
             ),
 
-            // Last marked.
+            // Grade last modified date.
             new rb_column_option(
                 'base',
                 'timemarked',
-                get_string('lastmarked', 'rb_source_assign'),
+                get_string('lastmodifiedgrade', 'rb_source_assign'),
                 'assign_grades.timemodified',
                 array(
                     'displayfunc' => 'nice_datetime',
@@ -222,7 +221,13 @@ class rb_source_assign extends rb_base_source {
                 'maxgrade',
                 get_string('maxgrade', 'rb_source_assign'),
                 'grade_grades.rawgrademax',
-                array('displayfunc' => 'maxgrade', 'joins' => 'grade_grades')
+                array(
+                    'displayfunc' => 'maxgrade',
+                    'joins' => 'grade_grades',
+                    'extrafields' => array(
+                        'scale_values' => 'scale.scale'
+                    )
+                )
             ),
 
             // Min grade.
@@ -231,7 +236,13 @@ class rb_source_assign extends rb_base_source {
                 'mingrade',
                 get_string('mingrade', 'rb_source_assign'),
                 'grade_grades.rawgrademin',
-                array('displayfunc' => 'mingrade', 'joins' => 'grade_grades')
+                array(
+                    'displayfunc' => 'mingrade',
+                    'joins' => 'grade_grades',
+                    'extrafields' => array(
+                        'scale_values' => 'scale.scale'
+                    )
+                )
             )
         );
 
@@ -272,19 +283,19 @@ class rb_source_assign extends rb_base_source {
                 'number'
             ),
 
-            // Last modifieid.
+            // Last modified (submission).
             new rb_filter_option(
                 'base',
                 'timemodified',
-                get_string('lastmodified', 'rb_source_assign'),
+                get_string('lastmodifiedsubmission', 'rb_source_assign'),
                 'date'
             ),
 
-            // Last marked.
+            // Last modified (grade).
             new rb_filter_option(
                 'base',
                 'timemarked',
-                get_string('lastmarked', 'rb_source_assign'),
+                get_string('lastmodifiedgrade', 'rb_source_assign'),
                 'date'
             ),
         );
@@ -370,13 +381,13 @@ class rb_source_assign extends rb_base_source {
      * @param boolean $isexport
      */
     public function rb_display_scalevalues($field, $record, $isexport) {
-        // if there's no scale values, return an empty string
-        if (empty($record->scale_values)) {
+        // If there's no scale values, return an empty string.
+        if (empty($field)) {
             return '';
         }
 
-        // if there are scale values, format them nicely
-        $v = explode(',', $record->scale_values);
+        // If there are scale values, format them nicely.
+        $v = explode(',', $field);
         $v = implode(', ', $v);
         return $v;
     }
@@ -389,7 +400,8 @@ class rb_source_assign extends rb_base_source {
      */
     public function rb_display_submissiongrade($field, $record, $isexport) {
         // If there's no grade (yet), then return a string saying so.
-        if ($field == -1) {
+        // If $field is 0, it is may be $mingrade or $grade.
+        if ((integer)$field < 0 || empty($field)) {
             return get_string('nograde', 'rb_source_assign');
         }
 

@@ -1,6 +1,416 @@
 <?php
 /*
 
+Release 2.7.2 (21st April 2015):
+==================================================
+
+Security issues:
+    T-13359        Improved param type handling in Reportbuilder ajax scripts
+
+New features:
+    T-13624        Added new OpenSesame integration plugin
+
+                   OpenSesame is a publisher of online training courses for business. This new
+                   plugin allows you to sign up for OpenSesame Plus subscription and access
+                   the large catalogue directly from your Totara site. To start the
+                   registration go to "Site administration / Courses / OpenSesame / Sign up
+                   for access". After the content packages are downloaded to your site you can
+                   either select them when adding SCORM activities or use the Create courses
+                   link.
+
+                   Additional information will be made available in the coming days, if you have any
+                   queries please contact your partner channel manager.
+
+Improvements:
+    T-14222        Improved accessibility of messages tab in Programs
+    T-13925        Improved sql case sensitive string comparisons for completion import records.
+
+                   When 'Force' is enabled the system keeps track of the course shortnames
+                   being used, each new course is compared in a case sensitive way and if it
+                   matches that but doesn't match exactly the system uses the first course
+                   name instance. There will be no error messages on the import report about
+                   it.
+
+    T-10482        Allowed selection of Facetoface rooms even when date is not known
+
+                   Contributed by Eugene Venter at Catalyst
+
+    T-14210        Added a label when adding users to a program to improve accessibility
+    T-14217        Added debug param to all Reportbuilder reports
+
+                   This allows administrators to retrieve additional debugging information if
+                   they have problems with reports. Some reports already had this feature, now
+                   all of them do.
+
+    T-14254        Added description field to the badge criteria
+    T-14293        Added labels to financial year start date setting in Reportbuilder for accessibility
+    T-13859        Added functionality to allow administrators to manage Facetoface session reservations
+
+                   If a manager reserved spaces for a their team in a Facetoface session and
+                   then they either left or changed role, there was no way to edit/remove the
+                   reservations they made.
+
+    T-14263        Improved the display of User full names for Programs
+    T-14251        Added option to update cancellation reason fields in Facetoface
+
+                   Before, admins were not able to update cancellation reason fields when
+                   removing attendees from a Facetoface session. Now, it can be done in the
+                   attendees tab.
+
+    T-13432        Added position and organisation framework columns and filters to all relevant Reportbuilder sources
+    T-10833        Added column 'ID number' when exporting Organisations and Positions from Hierarchies
+
+                   Position and Organisation ID numbers are now available when exporting
+                   Organisations/Positions via Hierarchy.
+
+                   Also, there is a new Position report source and an Organisation report
+                   source that include columns used when importing data via HR Import.
+
+    T-14155        Changed "No time limit" to "No minimum time" in Program course sets
+
+                   There was confusion about the purpose of this setting. Some people thought
+                   that "No time limit" meant that it would allow users to spend as long as
+                   they wanted to complete a program, but user time allowance is controlled in
+                   the assignments tab. Setting "No minimum time" will prevent time allowance
+                   exceptions (except where a relative assignment completion date would be in
+                   the past, such as "5 days after first login" being set on a user who first
+                   logged in one month ago).
+
+    T-13491        Fixed immediate updating of Audience enrolments after changes in dynamic audience rules
+    T-14016        Added "Choose" option as the default value for "Menu of choices" type custom fields
+    T-10081        Added ability to send Scheduled reports to users, audiences, and external emails
+    T-14212        Restored instant completion for course completion criteria
+
+                   Instant course completion was introduced in Totara 2.5 but was mistakenly
+                   removed in 2.6.0. This fix restores instant course completion (when the
+                   criteria completion depends on other courses) which also improves the
+                   performance of the completion cron tasks.
+
+    T-13542        Changed language pack, timezone and help site links to use HTTPS
+
+API Changes:
+    T-14151        Removed unused file totara/core/js/completion.report.js.php
+
+                   File has been unused since v1.1
+
+    T-14242        Added finer grained control to Scheduler form element
+
+                   Every X hours and Every X minutes were added to the scheduler form element
+                   which is used for scheduled reports, Report Builder cache refresh and HR
+                   Import. The frequency that these events occurs is still limited by the
+                   frequency of the corresponding scheduled tasks - to take full advantage of
+                   this feature, set "Import HR elements from external sources", "Generate
+                   scheduled reports" and "Refresh report cache" to run frequently (e.g. every
+                   minute). Any customisation using the scheduler form element will also be
+                   affected by this enhancement.
+
+    T-14215        Enforced linear date paths when upgrading Totara
+
+                   When upgrading a Totara installation you are now required to follow a
+                   linear release date path. This means that you now MUST upgrade to a version
+                   of the software released at the same time or after the release date of your
+                   current version.
+
+                   For example if you are currently running 2.5.25 which was released on 18th
+                   March 2015, you can upgrade to any subsequent version of 2.5, any 2.6 from
+                   2.6.18 onwards, or any 2.7 from 2.7.1 onwards.
+
+                   This ensures that sites never end up in a situation where they are missing
+                   critical security fixes, and are never in a state where the database
+                   structure may not match the code base.
+
+                   The Release Notes forum is a useful source for the date order of version
+                   releases https://community.totaralms.com/mod/forum/view.php?id=1834
+
+Bug Fixes:
+    T-14311        Fixed the archiving of Facetoface session signups and completion
+
+                   When uploading historic certification completions future facetoface session
+                   signups were being archived, now it will only archive signups that
+                   completed before the window opens date.
+
+    T-12583        Fixed behaviour of expand/collapse link in the standard course catalog
+    T-13550        Fixed Due Date displaying as 1970 on Record of Learning: Certifications
+
+                   This patch fixed a problem where an empty timedue data value was causing a
+                   date in 1970 to show in the Due Date field in the Record of Learning:
+                   Certifications report source. It also introduces a comprehensive phpunit
+                   test for the certification and recertification process.
+
+    T-13853        Fixed handling of position, organisation, and manager when a validation error occurs in email based self registration
+    T-13879        Fixed grade filter when checking against RPL grades
+    T-14184        Fixed appending of message body after manager prefix in Facetoface 3rd party notifications
+
+                   If Third party email addresses were specified in the Facetoface settings then any
+                   third-party copies of emails sent by the system would not contain both of the
+                   manager prefix and the body of the message (the content that the learner receives)
+
+    T-14394        Ensured Audience-based course visibility is considered when adding courses to a Learning Plan
+
+                   This is to prevent managers from adding a course to a Learning Plan for one of
+                   their direct reports, than the learner does not have visibility of and can
+                   therefore never complete.
+
+    T-14235        Fixed Audience rulesets for Course completion and Program completion
+    T-14105        Fixed calculation of 'User Courses Started Count' in the 'User' report source
+
+                   This is now calculated based on course completion records, rather than
+                   block_totara_stats (which might be missing 'started' records for various
+                   reasons, such as migration from Moodle or changing certain completion
+                   settings while a course is active). This affects the 'Courses Started'
+                   column in the 'My Team' page - courses started should now always be greater
+                   than or equal to courses completed.
+
+    T-14344        Fixed wrong ID field in signup and cancellation custom fields when upgrading to 2.7.
+
+                   Thanks to Russell England at Vision NV from contributing to this
+
+    T-14187        Fixed resetting of Hierarchy item types after every HR Import
+
+                   Hierarchy item (e.g. position, organisation etc) types should only be changed
+                   if the HR Import source contains the "type" column.
+
+    T-14284        Changed Record of Learning: Courses report source to use enrolment records
+
+                   Previously, it used role assignment records, but roles can be granted
+                   without the user being enrolled, and only indicated some level of
+                   capability within the course rather than participation. The whole query was
+                   also rewritten to improve performance.
+
+                   Thanks to Eugene Venter from Catalyst for this contribution
+
+    T-14338        Fixed user fullname handling in Facetoface when editing attendees
+    T-14243        Fixed handling of special characters (e.g. &) when returning selections from dialogs
+    T-14366        Fixed Reportbuilder expanded sections when multiple params are used
+
+                   Thanks to Andrew Hancox from Synergy Learning for this contribution
+
+    T-14192        Fixed Assignment Submissions report when it is set to use 'Scale' grade
+
+                   The Submission Grade, Max Grade, Min Grade and Grade Scale values columns
+                   were displaying incorrect information.
+
+    T-13890        Fixed date change emails being incorrectly sent when a Facetoface session capacity is changed
+    T-13917        Fixed error when adding Score column to Appraisal Details report
+
+                   The report would fail if the Score column was added to an Appraisal
+                   containing a Rating (Numeric scale) question.
+
+    T-13886        Fixed PHP Notice messages when adding a Rating (custom scale) question to Appraisals
+    T-14265        Fixed display of paragraph formatting dropdown in the Atto text editor
+    T-13742        Fixed uploading of Organisation and Position custom fields via HR Import
+
+                   Also added options to the interface for custom fields, found on the source
+                   configuration pages for positions and organisations just like they are for
+                   users.
+
+    T-13353        Fixed handling of param options in Reportbuilder
+    T-13894        Fixed validation and handling of Facetoface notification titles
+    T-13993        Fixed error when uploading users with the deleted flag set
+
+                   When uploading users via the upload users function, if a user in the CSV
+                   file had the deleted flag set, and was already marked as deleted in the
+                   system, an invalid user error was generated and this halted all processing
+                   of the CSV file.
+
+    T-14327        Fixed undefined function call when sorting Dashboards
+
+                   Thanks to Eugene Venter at Catalyst NZ for this contribution.
+
+    T-14048        Fixed incorrect Quiz question bank names after previous upgrade
+
+                   Question banks containing subcategories had the subcategory names
+                   incorrectly changed by a change in 2.5.20 and 2.6.12. If you are upgrading
+                   from a version affected (2.5.20-25, 2.6.12-18) you may want to check if
+                   your Quiz question bank categories are affected.
+
+    T-14186        Fixed max length validation for Question input text box
+    T-13009        Fixed incorrect creation of multiple custom room records when saving a Facetoface session
+    T-14131        Fixed handling of error when importing users via HR Import with the create action disabled
+
+                   Thanks to Andrew Hancox at Synergy Leaning for contributing the solution.
+
+    T-14302        Fixed database host validation in HR Import settings
+    T-13846        Fixed the default role setting for the Program Enrolment plugin
+    T-14083        Fixed display of 'More info' Facetoface session page
+
+                   When a session was fully booked, learners booked on the session would
+                   receive a ""This session is now full" message instead of the actual details
+                   of the session.
+
+    T-14220        Fixed page formatting for the certifications content tab
+    T-14237        Fixed incorrect display of Required Learning menu item when no programs currently need to be completed
+    T-14279        Fixed error when upgrading site to 2.7, with a custom theme that is not using the Totara menu
+
+                   This affects all sites that meet the following criteria:
+
+                   1. Upgrading to 2.7 from earlier versions.
+                   1. $CFG->courseprogress has been turned on.
+                   2. Using a theme that does not have the Totara menu.
+
+    T-13845        Fixed setting position fields on email-based self authentication
+    T-14075        Fixed inability to send a previously declined Learning Plan for re-approval
+    T-13839        Fixed the display of Facetoface enrolment plugin feedback on the enhanced catalog
+    T-14065        Removed non-functional "deleted user" filter from bulk user action pages
+
+
+Release 2.7.1 (18th March 2015):
+==================================================
+
+Security issues:
+    MoodleHQ       Security fixes from MoodleHQ http://docs.moodle.org/dev/Moodle_2.7.7_release_notes
+    T-13996        Removed potential CSRF when setting course completion via RPL
+    T-14175        Fixed file access in attachments for Record Of Learning Evidence items
+                   Thanks to Emmanuel Law from Aura Infosec for reporting this issue.
+
+
+API Changes:
+    T-14084        Renamed $onlyrequiredlearning parameter in prog_get_all_programs and prog_get_required_programs functions
+    T-14058        Converted all Learning Plan add_to_log() calls to events
+
+                   Plan logging was migrated to new events system
+
+    T-14104        Added courses which have completion records to the record of learning
+
+                   Previously, if a user had been enrolled into a course, made some progress
+                   or completed it, then been unenrolled from the course, the record of course
+                   participation disappeared from the user's record of learning. With this
+                   patch, courses will still show when a user has been unenrolled, if their
+                   course status was In Progress, Complete or Complete by RPL. This change was
+                   made to the Record of Learning: Courses report source, so all reports based
+                   on this source will be affected.
+
+Improvements:
+    T-13950        Improved display of long text strings in the alerts block
+    T-13944        Improved contents of Course Progress and Record of Learning Courses report sources
+
+                   The Course Progress now uses Report Builder (meaning that you can sort,
+                   change columns, etc) and contains the same records as Record of Learning
+                   Active Courses. The Record of Learning report source has been updated to
+                   include course records based on course completion data, so if a user was
+                   previously enrolled in a course and had a course completion record then
+                   that course will show in the Record of Learning reports.
+
+    T-13951        Implemented sql_round dml function to fix MySQL rounding problems
+    T-13867        Added "is not empty" option to text filters in Reportbuilder
+    T-13939        Added course custom field value to Program and Certification overview
+
+                   When a courseset is using "Some courses" completion logic and a course
+                   custom field is being used as part of the course completion criteria the
+                   custom field is now displayed along with the course so that learners are
+                   aware of such completion criteria.
+
+    T-14039        Removed HTML table from tasks block
+
+                   Changed to better meet Accessibility guidelines
+
+    T-12395        Improved HTML heading on calendar page
+
+                   Changed to better meet Accessibility guidelines
+
+    T-13938        Improved required courses message on Program overview
+
+                   The "Some courses" option was recently added to the courseset completion
+                   requirements for a program. The overview page for the program however did
+                   not change to reflect accurately the possible range of different courseset
+                   completion requirements.
+
+    T-14015        Added warning messages to the scheduled tasks page if cron has not run recently
+    T-14007        Improved contrast on show/hide icons in HR Import -> Manage Elements
+
+                   Changed to better meet Accessibility guidelines
+
+    T-14095        Improved labels for all filter inputs on the "Browse list of users" page
+
+                   Changed to better meet Accessibility guidelines
+
+    T-13734        Improved labels of all inputs on Reportbuilder filters
+
+                   Changed to better meet Accessibility guidelines
+
+Bug Fixes:
+    T-14057        Fixed saving of default content for course and program custom fields
+    T-12991        Fixed Facetoface manager reservations with multiple bookings
+
+                   Before, if a learner had been assigned a reserved place they could not be
+                   assigned to any other sessions; even if multiple sign-ups was on.
+
+                   Now, it should allow managers to assign members of their staff to multiple
+                   sessions if "Allow multiple sessions signup per user" setting is on, but
+                   not allow more than one user assignment per Facetoface activity if that
+                   setting is off.
+
+    T-13920        Fixed export to Excel of completion progress column in Record Of Learning - Programs report source
+    T-13884        Fixed error in Appraisals dialog box when selecting required learning for review
+    T-14114        Fixed program and certification exceptions being regenerated after being resolved
+
+                   This patch also prevents certification exceptions being generated when an
+                   assignment date is in the past and the user is in the recertification stage
+                   (at which point the assignment date is not relevant, as the due date is
+                   controlled by the certification expiry date instead).
+
+    T-14093        Fixed dynamic audiences rules based on Position and Organisation custom fields
+
+                   Thanks to Eugene Venter at Catalyst for contributing to this
+
+    T-13628        Fixed deletion of custom fields if missing from the HR Import CSV file
+    T-13926        Fixed copying instance data when copying block instances
+
+                   When users click the "Customise this page" button in My Learning, blocks
+                   copied from the default My Learning page to the user's personal My Learning
+                   page can also copy instance specific data. This allows Quick Links blocks
+                   to correctly copy the default URLs.
+
+    T-14070        Fixed MySQL 5.6 compatibility issues
+
+                   Totara would not install on MySQL 5.6, and also unit tests were failing
+                   with "Specified key was too long" errors
+
+    T-14170        Fixed Course categories path issue due to changes in 2.7 features
+    T-14120        Fixed sort in all Audience dialog boxes
+    T-13622        Fixed an issue with the validation of aspirational positions
+    T-14142        Fixed display of Submission Feedback Comment and Last modified date in Assignment Submissions report source
+    T-13472        Fixed several problems where scheduled Appraisal messages were not sent at the right times
+    T-14135        Fixed paging when adding items to a learning plan
+    T-14158        Fixed the display of Facetoface sessions spanning several days on the calendar
+
+                   Thanks to Eugene Venter at Catalyst for contributing to this
+
+    T-14023        Fixed expansion of the Totara menu when using Standard Totara Responsive theme on small screens
+    T-14098        Fixed visibility of hidden/disabled Certifications and Programs in Audience Enrolled Learning
+    T-13984        Fixed editing/deleting of blocks when viewing a Choice activity module
+
+                   Thanks to Ben Lobo at Kineo for contributing to this
+
+    T-13962        Fixed error on site settings page after upgrading to Totara 2.7 from Moodle 2.7
+    T-13964        Fixed issue with sending appraisal messages to unassigned roles
+    T-14046        Fixed the redirection behaviour of custom menu management pages
+    T-14021        Fixed the default title of the Mentees block
+    T-14125        Fixed compatibility of iCal email attachments with some SMTP servers
+    T-14074        Fixed theme precedence issues
+
+                   Currently if you set a mobile theme in Site Administration > Appearance >
+                   Themes > Theme Selector, the mobile theme will take precedence over any
+                   user, course or category themes when viewing Totara on a mobile device.
+                   This patch reverses this (so that User, Course and Category themes will
+                   take precedence over a mobile theme).
+
+                   If you wish to maintain the current (pre patch) behaviour add the line
+                   "$CFG->themeorder = array('device', 'course', 'category', 'session',
+                   'user', 'site');" to your config.php file
+
+    T-13661        Fixed joinlist for the Assignment Submissions report source
+
+                   When viewing the 'Assignment submissions' report source, no assignment
+                   submissions were displayed unless they were either graded, or the
+                   'Submission grade' column was removed from the report.
+
+    T-14101        Fixed uppercase column names in Facetoface enrolment plugin
+
+                   Can cause database query errors on MSSQL installations using case sensitive
+                   collations
+
+
 Release 2.7.0 (2nd March 2015):
 ==================================================
 

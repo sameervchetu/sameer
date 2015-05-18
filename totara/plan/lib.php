@@ -146,14 +146,52 @@ $PLAN_AVAILABLE_LINKTYPES = array(
 * @return bool false if file not found, does not return if found - just send the file
 */
 function totara_plan_pluginfile($course, $cm, $context, $filearea, $args, $forcedownload, $options=array()) {
+    global $DB, $USER;
+
+    if (!$context instanceof context_system) {
+        // This can only occur in the system context.
+        return false;
+    }
+
+    if (count($args) > 2) {
+        // Require at least evidence id and path.
+        return false;
+    }
+
+    if ($filearea !== 'attachment') {
+        // Plans only have one file area.
+        return false;
+    }
+
+    require_login();
+
+    // First argument is the evidence ID.
+    $evidenceid = array_shift($args);
+    $evidenceid = clean_param($evidenceid, PARAM_INT);
+
+    if (!$evidence = $DB->get_record('dp_plan_evidence', array('id' => $evidenceid))) {
+        // Return false, don't use MUST_EXIST to throw an exception.
+        return false;
+    }
+    $userid = $evidence->userid;
+
+    // Check the current user is able to see the evidence.
+    if ($USER->id != $evidence->userid && !totara_is_manager($userid) && !has_capability('totara/plan:accessanyplan', $context)) {
+        // The user does not own the evidence, is not the manager of the user the evidence belongs to and does not have the required
+        // capability to access all plans.
+        return false;
+    }
+
     $fs = get_file_storage();
-    $relativepath = implode('/', $args);
-    $fullpath = "/{$context->id}/totara_plan/$filearea/$args[0]/$args[1]";
+    // Join all remaining args together as a path.
+    $relativepath = join('/', $args);
+    $fullpath = "/{$context->id}/totara_plan/$filearea/$evidenceid/$relativepath";
     if (!$file = $fs->get_file_by_hash(sha1($fullpath)) or $file->is_directory()) {
         return false;
     }
-    // finally send the file
-    send_stored_file($file, 86400, 0, true, $options); // download MUST be forced - security!
+
+    // Finally send the file.
+    send_stored_file($file, 86400, 0, true, $options); // Download MUST be forced - security!
 }
 
 
@@ -372,7 +410,10 @@ function dp_get_rol_tabs_visible($userid) {
     }
 
     $course_count = enrol_get_users_courses($userid);
-    if (!empty($course_count) || $show_course_tab) {
+    $select = "userid = :userid AND status > :status";
+    $coursecompletioncount = $DB->record_exists_select('course_completions', $select,
+        array('userid' => $userid, 'status' => COMPLETION_STATUS_NOTYETSTARTED));
+    if (!empty($course_count) || !empty($coursecompletioncount) || $show_course_tab) {
         $visible[] = 'courses';
     }
 

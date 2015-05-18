@@ -64,31 +64,19 @@ class rb_source_dp_course extends rb_base_source {
      */
     public static function get_base_sql() {
         global $DB;
-        return "(select distinct ".
-                $DB->sql_concat_join(
-                        "','",
-                        array(
-                            sql_cast2char('ra.userid'),
-                            sql_cast2char('ctx.instanceid')
-                        )
-                ) . " as id, ".
-                "ra.userid as userid, ctx.instanceid as courseid ".
-                "from {role_assignments} ra ".
-                "inner join {context} ctx ".
-                "on ra.contextid = ctx.id and ctx.contextlevel = " . CONTEXT_COURSE .
-                " UNION ".
-                "select distinct ".
-                $DB->sql_concat_join(
-                        "','",
-                        array(
-                            sql_cast2char('p1.userid'),
-                            sql_cast2char('pca1.courseid')
-                        )
-                )." as id, ".
-                "p1.userid as userid, pca1.courseid as courseid ".
-                "from {dp_plan_course_assign} pca1 ".
-                "inner join {dp_plan} p1 ".
-                "on pca1.planid = p1.id)";
+        $uniqueid = $DB->sql_concat_join("','", array(sql_cast2char('userid'), sql_cast2char('courseid')));
+        return "(SELECT " . $uniqueid . " AS id, userid, courseid
+                   FROM (SELECT ue.userid AS userid, e.courseid AS courseid
+                           FROM {user_enrolments} ue
+                           JOIN {enrol} e ON ue.enrolid = e.id
+                          UNION
+                         SELECT cc.userid AS userid, cc.course AS courseid
+                           FROM {course_completions} cc
+                          WHERE cc.status > " . COMPLETION_STATUS_NOTYETSTARTED . "
+                          UNION
+                         SELECT p1.userid AS userid, pca1.courseid AS courseid
+                           FROM {dp_plan_course_assign} pca1
+                           JOIN {dp_plan} p1 ON pca1.planid = p1.id) basesub)";
     }
 
     //
@@ -386,7 +374,16 @@ class rb_source_dp_course extends rb_base_source {
                     'extrafields' => array('userid' => 'base.userid', 'courseid' => 'base.courseid'),
                 )
             );
-
+        $columnoptions[] = new rb_column_option(
+                'course_completion',
+                'enroldate',
+                get_string('enrolled', 'totara_core'),
+                "course_completion.timeenrolled",
+                array(
+                    'joins' => array('course_completion'),
+                    'displayfunc' => 'nice_date',
+                )
+            );
         $columnoptions[] = new rb_column_option(
                 'course_completion',
                 'statusandapproval',
@@ -408,14 +405,14 @@ class rb_source_dp_course extends rb_base_source {
                 'course_completion',
                 'grade',
                 get_string('grade', 'rb_source_course_completion'),
-                'grade_grades.finalgrade',
+                'CASE WHEN course_completion.status = ' . COMPLETION_STATUS_COMPLETEVIARPL . ' THEN course_completion.rplgrade
+                      ELSE grade_grades.finalgrade END',
                 array(
-                    'joins' => 'grade_grades',
-                    'displayfunc' => 'course_grade_percent',
-                    'extrafields' => array(
-                        'rplgrade' => 'course_completion.rplgrade',
-                        'course_completion_status' => 'course_completion.status'
+                    'joins' => array(
+                        'grade_grades',
+                        'course_completion'
                     ),
+                    'displayfunc' => 'course_grade_percent',
                 )
             );
         $columnoptions[] = new rb_column_option(
@@ -432,14 +429,13 @@ class rb_source_dp_course extends rb_base_source {
                 'course_completion',
                 'gradestring',
                 get_string('requiredgrade', 'rb_source_course_completion'),
-                'grade_grades.finalgrade',
+                'CASE WHEN course_completion.status = ' . COMPLETION_STATUS_COMPLETEVIARPL . ' THEN course_completion.rplgrade
+                      ELSE grade_grades.finalgrade END',
                 array(
                     'joins' => array('criteria', 'grade_grades'),
                     'displayfunc' => 'grade_string',
                     'extrafields' => array(
                         'gradepass' => 'criteria.gradepass',
-                        'rplgrade' => 'course_completion.rplgrade',
-                        'course_completion_status' => 'course_completion.status'
                     ),
                     'defaultheading' => get_string('grade', 'rb_source_course_completion'),
                 )

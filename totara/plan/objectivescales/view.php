@@ -55,7 +55,7 @@ if (!$objective = $DB->get_record('dp_objective_scale', array('id' => $id))) {
 $scale_used = dp_objective_scale_is_used($id);
 
 if ($delete) {
-    if (!$value = $DB->get_record('dp_objective_scale_value', array('id' => $delete))) {
+    if (!$value = $DB->get_record('dp_objective_scale_value', array('id' => $delete, 'objscaleid' => $objective->id))) {
         print_error('error:invalidobjectivescalevalueid', 'totara_plan');
     }
     if ($scale_used) {
@@ -76,6 +76,8 @@ if ($delete) {
         $sql = "UPDATE {dp_objective_scale_value} SET sortorder = sortorder-1 WHERE objscaleid = ? AND sortorder > ?";
         $DB->execute($sql, array($objective->id, $value->sortorder));
         $transaction->allow_commit();
+
+        \totara_plan\event\objective_scale_updated::create_from_scale($objective)->trigger();
         totara_set_notification(get_string('deletedobjectivescalevalue', 'totara_plan', format_string($objective->name)), $CFG->wwwroot.'/totara/plan/objectivescales/view.php?id='.$objective->id, array('class' => 'notifysuccess'));
 
     } else {

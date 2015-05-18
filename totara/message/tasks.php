@@ -38,6 +38,7 @@ global $USER;
 
 $sid = optional_param('sid', '0', PARAM_INT);
 $format = optional_param('format', '',PARAM_TEXT); //export format
+$debug  = optional_param('debug', 0, PARAM_INT);
 
 // Default to current user.
 $id = $USER->id;
@@ -55,6 +56,10 @@ $data = array(
 );
 if (!$report = reportbuilder_get_embedded_report($shortname, $data, false, $sid)) {
     print_error('error:couldnotgenerateembeddedreport', 'totara_reportbuilder');
+}
+
+if ($debug) {
+    $report->debug($debug);
 }
 
 $report->defaultsortcolumn = 'message_values_sent';

@@ -1280,7 +1280,7 @@ function assign_get_completion_state($course, $cm, $userid, $type) {
  * @param int $userid
  * @param int $courseid
  */
-function assign_archive_completion($userid, $courseid) {
+function assign_archive_completion($userid, $courseid, $windowopens = NULL) {
     global $CFG, $DB;
 
     // Required for assign class.

@@ -360,10 +360,18 @@ class totara_customfield_renderer extends plugin_renderer_base {
      * @param array $elements (optional) Aditional form fields for the customfield.
      */
     public function customfield_manage_edit_form($prefix, $typeid, $tableprefix, $field, $redirect, $heading, $tabs, $elements = array()) {
-        global $CFG;
+        global $CFG, $TEXTAREA_OPTIONS;
         require_once($CFG->dirroot . '/totara/customfield/index_field_form.php');
 
         $datatype = $field->datatype;
+        require_once($CFG->dirroot.'/totara/customfield/index_field_form.php');
+        $field->descriptionformat = FORMAT_HTML;
+        $field = file_prepare_standard_editor($field, 'description', $TEXTAREA_OPTIONS, $TEXTAREA_OPTIONS['context'], 'totara_customfield', 'textarea', $field->id);
+        if ($datatype == 'textarea') {
+            $field->defaultdataformat = FORMAT_HTML;
+            $field = file_prepare_standard_editor($field, 'defaultdata', $TEXTAREA_OPTIONS, $TEXTAREA_OPTIONS['context'], 'totara_customfield', 'textarea', $field->id);
+        }
+
         $datatosend = array('datatype' => $datatype,
             'prefix' => $prefix, 'typeid' => $typeid, 'tableprefix' => $tableprefix, 'additionalelements' => $elements);
         $fieldform = new \field_form(null, $datatosend);

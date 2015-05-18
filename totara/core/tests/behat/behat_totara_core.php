@@ -54,6 +54,29 @@ class behat_totara_core extends behat_base {
     }
 
     /**
+     * We expect to be on a Totara site.
+     *
+     * @Given /^I am on a totara site$/
+     */
+    public function i_am_on_a_totara_site() {
+        global $DB;
+        // Set Totara defaults. This is to undo the work done in /lib/behat/classes/util.php around line 90
+        set_config('enablecompletion', 1);
+        set_config('forcelogin', 1);
+        set_config('enablecompletion', 1, 'moodlecourse');
+        set_config('completionstartonenrol', 1, 'moodlecourse');
+        set_config('enrol_plugins_enabled', 'manual,guest,self,cohort,totara_program');
+        set_config('enhancedcatalog', 1);
+        set_config('preventexecpath', 1);
+        $DB->set_field('role', 'name', 'Site Manager', array('shortname' => 'manager'));
+        $DB->set_field('role', 'name', 'Editing Trainer', array('shortname' => 'editingteacher'));
+        $DB->set_field('role', 'name', 'Trainer',array('shortname' => 'teacher'));
+        $DB->set_field('role', 'name', 'Learner', array('shortname' => 'student'));
+        $DB->set_field('modules', 'visible', 0, array('name'=>'workshop'));
+        $DB->set_field('modules', 'visible', 0, array('name'=>'feedback'));
+    }
+
+    /**
      * Finds a totara menu item and returns the node.
      *
      * @param string $text
@@ -194,5 +217,137 @@ class behat_totara_core extends behat_base {
     public function i_focus_on($element, $selectortype) {
         $node = $this->get_selected_node($selectortype, $element);
         $node->focus();
+    }
+
+    /**
+     * Generic focus action.
+     *
+     * @When /^I set self completion for "([^"]*)" in the "([^"]*)" category$/
+     * @param string $course The fullname of the course we are setting up
+     * @param string $category The fullname of the category containing the course
+     */
+    public function i_set_self_completion_for($course, $category) {
+
+        $steps = array();
+        $steps[] = new Given('I navigate to "Manage courses and categories" node in "Site administration > Courses"');
+        $steps[] = new Given('I click on "' . $category . '" "link" in the ".category-listing" "css_element"');
+        $steps[] = new Given('I click on "' . $course .'" "link" in the ".course-listing" "css_element"');
+        $steps[] = new Given('I click on "View" "link" in the ".course-detail-listing-actions" "css_element"');
+        $steps[] = new Given('I click on "Course completion" "link"');
+        $steps[] = new Given('I click on "Condition: Manual self completion" "link"');
+        $steps[] = new Given('I click on "criteria_self_value" "checkbox"');
+        $steps[] = new Given('I press "Save changes"');
+        $steps[] = new Given('I add the "Self completion" block');
+
+        return $steps;
+    }
+
+    /**
+     * Check the program progress bar meets a given percentage.
+     *
+     * @Then /^I should see "([^"]*)" program progress$/
+     */
+    public function i_should_see_program_progress($text) {
+
+        $text = $this->getSession()->getSelectorsHandler()->xpathLiteral($text);
+        $xpath = "//div[@id = 'progressbar']//img[contains(@alt,{$text})]";
+        $node = $this->find(
+            'xpath',
+            $xpath,
+            new \Behat\Mink\Exception\ExpectationException('Program progress bar "'.$text.'" could not be found', $this->getSession())
+        );
+
+        if (!$node->isVisible()) {
+            throw new \Behat\Mink\Exception\ExpectationException('Program progress bar "'.$text.'" is not visible visible', $this->getSession());
+        }
+        return $node;
+    }
+
+    /**
+     * Set a field within a program coursesets dynamically generated (and prefixed) form.
+     *
+     * @Then /^I set "([^"]*)" for courseset "([^"]*)" to "([^"]*)"$/
+     */
+    public function i_set_courseset_variable($varname, $courseset, $value) {
+
+        $xpath = "";
+        $xpath .= "//div[@id = 'course_sets_ce' or @id = 'course_sets_rc']";
+        $xpath .= "//fieldset[descendant::legend[contains(.,'$courseset ')]]";
+        $xpath .= "//div[@class='fitem' and descendant::label[contains(.,'$varname ')]]";
+        $xpath .= "//div[@class='felement']//input";
+        $node = $this->find(
+            'xpath',
+            $xpath,
+            new \Behat\Mink\Exception\ExpectationException('Courseset setting "'.$varname.'" could not be found', $this->getSession())
+        );
+
+        if ($node->isVisible()) {
+            $node->setValue($value);
+        } else {
+            throw new \Behat\Mink\Exception\ExpectationException('Courseset setting "'.$varname.'" is not visible', $this->getSession());
+        }
+
+        return $node;
+    }
+
+    /**
+     * Winds back the timestamps for certifications so you can trigger recerts.
+     *
+     * @Then /^I wind back certification dates by (\d+) months$/
+     */
+    public function i_wind_back_certification_dates_by_months($windback) {
+        global $DB;
+
+        $windback = (int)$windback * (4 * WEEKSECS); // Assuming 4 weeks per month (close enough).
+
+        // A list of all the places we need to windback, table => fields.
+        $databasefields = array(
+            'prog_completion' => array('timestarted', 'timedue', 'timecompleted'),
+            'certif_completion' => array('timewindowopens', 'timeexpires', 'timecompleted'),
+            'certif_completion_history' => array('timewindowopens', 'timeexpires', 'timecompleted', 'timemodified'),
+        );
+
+        // Windback all the timestamps by the specified amount, but don't fall into negatives.
+        foreach ($databasefields as $table => $fields) {
+            foreach ($fields as $field) {
+                $sql = "UPDATE {{$table}}
+                           SET {$field} = {$field} - {$windback}
+                         WHERE {$field} > {$windback}";
+                $DB->execute($sql);
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Not ideal but we need to run the recertification task and
+     * there is no way (currently) to do so through the interface.
+     *
+     * @Then /^I run the recertification task$/
+     */
+    public function i_run_recertification_task() {
+        global $CFG;
+        require_once($CFG->dirroot . '/totara/certification/lib.php');
+        recertify_window_opens_stage();
+        recertify_window_abouttoclose_stage();
+        recertify_expires_stage();
+    }
+
+    /**
+     * Not ideal but we need to run the programs update learner task and
+     * there is no way (currently) to do so through the interface.
+     *
+     * @When /^I run the program assignments task$/
+     */
+    public function i_run_program_assignments_task() {
+        global $DB;
+
+        // Get all programs.
+        $progrecords = $DB->get_records('prog');
+        foreach ($progrecords as $prog) {
+            $program = new \program($prog->id);
+            $program->update_learner_assignments();
+        }
     }
 }

@@ -1990,6 +1990,7 @@ $capabilities = array(
 
     // Set up/edit criteria of earning a badge.
     'moodle/badges:configurecriteria' => array(
+        'riskbitmask'  => RISK_XSS,
         'captype'      => 'write',
         'contextlevel' => CONTEXT_COURSE,
         'archetypes'   => array(

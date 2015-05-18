@@ -5,7 +5,8 @@ Feature: Perform basic dashboard user changes
   I need to change dashboards
 
   Background:
-  Given the following "users" exist:
+  Given I am on a totara site
+    And the following "users" exist:
       | username |
       | learner1 |
       | learner2 |

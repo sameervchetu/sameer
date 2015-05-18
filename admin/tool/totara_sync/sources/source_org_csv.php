@@ -56,9 +56,19 @@ class totara_sync_source_org_csv extends totara_sync_source_org {
                 $fieldmappings[$f] = $this->config->{'fieldmapping_'.$f};
             }
         }
+        foreach ($this->customfields as $key => $f) {
+            if (!empty($this->config->{'fieldmapping_'.$key})) {
+                $fieldmappings[$key] = $this->config->{'fieldmapping_'.$key};
+            }
+        }
 
         $filestruct = array();
         foreach ($this->fields as $f) {
+            if (!empty($this->config->{'import_'.$f})) {
+                $filestruct[] = !empty($fieldmappings[$f]) ? '"'.$fieldmappings[$f].'"' : '"'.$f.'"';
+            }
+        }
+        foreach (array_keys($this->customfields) as $f) {
             if (!empty($this->config->{'import_'.$f})) {
                 $filestruct[] = !empty($fieldmappings[$f]) ? '"'.$fieldmappings[$f].'"' : '"'.$f.'"';
             }
@@ -195,6 +205,28 @@ class totara_sync_source_org_csv extends totara_sync_source_org {
                 $fieldmappings[$f] = $f;
             } else {
                 $fieldmappings[$this->config->{'fieldmapping_'.$f}] = $f;
+            }
+        }
+
+        foreach (array_keys($this->customfields) as $f) {
+            if (empty($this->config->{'import_'.$f})) {
+                continue;
+            }
+            if (empty($this->config->{'fieldmapping_'.$f})) {
+                $fieldmappings[$f] = $f;
+            } else {
+                $fieldmappings[$this->config->{'fieldmapping_'.$f}] = $f;
+            }
+        }
+
+        // Check field integrity for custom fields.
+        foreach ($this->customfields as $cf => $name) {
+            if (empty($this->config->{'import_'. $cf}) || in_array($cf, $fieldmappings)) {
+                // Disabled or mapped fields can be ignored.
+                continue;
+            }
+            if (!in_array($cf, $fields)) {
+                throw new totara_sync_exception($this->get_element_name(), 'importdata', 'csvnotvalidmissingfieldx', $cf);
             }
         }
 

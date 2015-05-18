@@ -1142,6 +1142,8 @@ class core_plugin_manager {
                 'flickr', 'flickr_public', 'googledocs', 'local', 'merlot',
                 'picasa', 'recent', 'skydrive', 's3', 'upload', 'url', 'user', 'webdav',
                 'wikimedia', 'youtube'
+                // Totara:
+                , 'opensesame',
             ),
 
             'scormreport' => array(

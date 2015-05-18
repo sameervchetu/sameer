@@ -141,7 +141,7 @@ define('COMPONENT_UPTODATE',        1);
 define('COMPONENT_NEEDUPDATE',      2);
 define('COMPONENT_INSTALLED',       3);
 
-define('DOWNLOAD_BASE', 'http://download.totaralms.com/lang');
+define('DOWNLOAD_BASE', 'https://download.totaralms.com/lang');
 /**
  * This class is used to check, download and install items from
  * server specified in DOWNLOAD_BASE to the moodledata directory.

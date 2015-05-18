@@ -27,6 +27,7 @@ var CSS = {
         CONTENTNODE: '.content',
         CATEGORYLISTENLINK: '.category .info .categoryname',
         CATEGORYSPINNERLOCATION: '.categoryname',
+        CATEGORYWITHCOLLAPSEDUNLOADEDCHILDREN: '.category.with_children.notloaded.collapsed',
         CATEGORYWITHCOLLAPSEDLOADEDCHILDREN: '.category.with_children.loaded.collapsed',
         CATEGORYWITHMAXIMISEDLOADEDCHILDREN: '.category.with_children.loaded:not(.collapsed)',
         COLLAPSEEXPAND: '.collapseexpand',
@@ -306,6 +307,26 @@ NS._collapse_expand_all = function(e) {
 
 NS.expand_all = function(ancestor) {
     var finalexpansions = [];
+
+    ancestor.all(SELECTORS.CATEGORYWITHCOLLAPSEDUNLOADEDCHILDREN).each(function(categorynode) {
+        categoryid = categorynode.getData('categoryid');
+        depth = categorynode.getData('depth');
+        if (typeof categoryid === "undefined" || typeof depth === "undefined") {
+            return;
+        }
+
+        this._toggle_generic_expansion({
+            parentnode: categorynode,
+            childnode: categorynode.one(SELECTORS.CONTENTNODE),
+            spinnerhandle: SELECTORS.CATEGORYSPINNERLOCATION,
+            data: {
+                categoryid: categoryid,
+                depth: depth,
+                showcourses: categorynode.getData('showcourses'),
+                type: TYPE_CATEGORY
+            }
+        });
+    }, this);
 
     ancestor.all(SELECTORS.CATEGORYWITHCOLLAPSEDLOADEDCHILDREN)
         .each(function(c) {

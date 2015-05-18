@@ -164,7 +164,9 @@ class prog_manager_assignment extends prog_user_assignment {
 
     public function display_criteria() {
         global $DB;
-        $managers_name = $DB->get_record_select('user', "id = ?", array($this->assignment->assignmenttypeid), $DB->sql_fullname() . ' as fullname');
+        $usernamefields = get_all_user_name_fields(true);
+        $managers_name = $DB->get_record_select('user', "id = ?", array($this->assignment->assignmenttypeid), $usernamefields);
+        $managers_name->fullname = fullname($managers_name);
         $out = '';
         $out .= html_writer::start_tag('li', array('class' => 'assignmentcriteria'));
         $out .= html_writer::start_tag('span', array('class' => 'criteria'));

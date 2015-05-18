@@ -112,22 +112,28 @@ if ($mform->is_cancelled()) {
         // Set the default objective value to the least competent one
         if (count($objectiveidlist)) {
             $objectivenew->defaultid = $objectiveidlist[count($objectiveidlist)-1];
-            $DB->update_record('dp_objective_scale', $objectivenew);
         }
-        $notification = get_string('objectivescaleadded', 'totara_plan', format_string($objectivenew->name));
+
+        $objectivenew = file_postupdate_standard_editor($objectivenew, 'description', $TEXTAREA_OPTIONS, $TEXTAREA_OPTIONS['context'], 'totara_plan', 'dp_objective_scale', $objectivenew->id);
+        $DB->update_record('dp_objective_scale', $objectivenew);
         $transaction->allow_commit();
+
+        $objectivenew = $DB->get_record('dp_objective_scale', array('id' => $objectivenew->id));
+        \totara_plan\event\objective_scale_created::create_from_scale($objectivenew)->trigger();
+
+        $notification = get_string('objectivescaleadded', 'totara_plan', format_string($objectivenew->name));
+
     } else {
         // Existing objective
+        $objectivenew = file_postupdate_standard_editor($objectivenew, 'description', $TEXTAREA_OPTIONS, $TEXTAREA_OPTIONS['context'], 'totara_plan', 'dp_objective_scale', $objectivenew->id);
         $DB->update_record('dp_objective_scale', $objectivenew);
-        add_to_log(SITEID, 'objectivescales', 'updated', "view.php?id=$objectivenew->id");
+
+        $objectivenew = $DB->get_record('dp_objective_scale', array('id' => $objectivenew->id));
+        \totara_plan\event\objective_scale_updated::create_from_scale($objectivenew)->trigger();
+
         $notification = get_string('objectivescaleupdated', 'totara_plan', format_string($objectivenew->name));
     }
 
-    //update description
-    $objectivenew = file_postupdate_standard_editor($objectivenew, 'description', $TEXTAREA_OPTIONS, $TEXTAREA_OPTIONS['context'], 'totara_plan', 'dp_objective_scale', $objectivenew->id);
-    $DB->set_field('dp_objective_scale', 'description', $objectivenew->description, array('id' => $objectivenew->id));
-    // Log
-    add_to_log(SITEID, 'objectivescales', 'added', "view.php?id=$objectivenew->id");
     totara_set_notification($notification,
         "$CFG->wwwroot/totara/plan/objectivescales/view.php?id={$objectivenew->id}",
         array('class' => 'notifysuccess'));

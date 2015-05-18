@@ -58,6 +58,9 @@ M.totara_f2f_room = M.totara_f2f_room || {
         buttonsObj[M.util.get_string('ok','moodle')] = function() { handler._save(); };
         buttonsObj[M.util.get_string('cancel','moodle')] = function() { handler._cancel(); };
 
+        // Set the datetimeknown.
+        M.totara_f2f_room.config.datetimeknown = $('select[name=datetimeknown]').val();
+
         totaraDialogs['addpdroom'] = new totaraDialog(
                 'addpdroom-dialog',
                 'show-addpdroom-dialog',
@@ -65,30 +68,25 @@ M.totara_f2f_room = M.totara_f2f_room || {
                     buttons: buttonsObj,
                     title: '<h2>' + M.util.get_string('chooseroom', 'facetoface') + M.totara_f2f_room.config.display_selected_item + '</h2>'
                 },
-                url + 'sessionrooms.php?sessionid=' + M.totara_f2f_room.config.sessionid + '&facetofaceid=' + M.totara_f2f_room.config.facetofaceid,
+                url + 'sessionrooms.php?sessionid=' + M.totara_f2f_room.config.sessionid +
+                    '&facetofaceid=' + M.totara_f2f_room.config.facetofaceid +
+                    '&datetimeknown=' + M.totara_f2f_room.config.datetimeknown,
                 handler
         );
 
-        // Disable pre-defined room button if session datetimes aren't know
-        if ($('select[name="datetimeknown"]').val() == 0) {
-            $('input[name="show-addpdroom-dialog"]').attr('disabled', 'disabled');
-        }
         $('select[name="datetimeknown"]').change(function() {
-            var addroombtn = $('input[name="show-addpdroom-dialog"]');
             if ($(this).val() == 1) {
-                addroombtn.removeAttr('disabled');
                 $('input[name="duration[number]"]').val('');
-            } else {
-                addroombtn.attr('disabled', 'disabled');
-                clean_pdroom_data();
             }
         });
 
-        // Clear duration if session start/finish datetimes change.
+        // Clear pre-defined room selection if session start/finish datetimes change
         $('select[name^="timestart["]').change(function() {
+            clean_pdroom_data();
             $('input[name="duration[number]"]').val('');
         });
         $('select[name^="timefinish["]').change(function() {
+            clean_pdroom_data();
             $('input[name="duration[number]"]').val('');
         });
 
@@ -201,7 +199,11 @@ totaraDialog_handler_addpdroom.prototype._open = function(alternative_url) {
     });
     // Update the url to include the timestamps
     timeslots = JSON.stringify(timeslots);
-    this._dialog.default_url = M.cfg.wwwroot+'/mod/facetoface/room/ajax/sessionrooms.php?sessionid='+M.totara_f2f_room.config.sessionid+'&timeslots='+timeslots+'&facetofaceid='+M.totara_f2f_room.config.facetofaceid;
+    this._dialog.default_url = M.cfg.wwwroot+'/mod/facetoface/room/ajax/sessionrooms.php'+
+        '?sessionid='+M.totara_f2f_room.config.sessionid+
+        '&datetimeknown='+M.totara_f2f_room.config.datetimeknown+
+        '&timeslots='+timeslots+
+        '&facetofaceid='+M.totara_f2f_room.config.facetofaceid;
 }
 
 totaraDialog_handler_addpdroom.prototype.first_load = function() {

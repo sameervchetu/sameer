@@ -635,7 +635,7 @@ abstract class prog_assignment_category {
             $show_deletecompletionlink = true;
         }
 
-        $html = '';
+        $html = html_writer::start_tag('div', array('class' => "completionlink_{$item->id}"));
         if ($item->completiontime != COMPLETION_TIME_NOT_SET && !empty($item->completiontime)) {
             $html .= html_writer::empty_tag('input', array('type' => 'hidden',
                 'name' => 'completiontime['.$this->id.']['.$item->id.']', 'value' => $item->completiontime));
@@ -652,6 +652,7 @@ abstract class prog_assignment_category {
         if ($show_deletecompletionlink) {
             $html .= $OUTPUT->action_icon('#', new pix_icon('t/delete', get_string('removecompletiondate', 'totara_program')), null, array('class' => 'deletecompletiondatelink'));
         }
+        html_writer::end_tag('div');
         return $html;
     }
 
@@ -1148,9 +1149,10 @@ class managers_category extends prog_assignment_category {
         );
 
         // Go to the database and gets the assignments.
+        $usernamefields = get_all_user_name_fields(true, 'u');
         $items = $DB->get_records_sql("
-            SELECT u.id, " . $DB->sql_fullname('u.firstname', 'u.lastname') . " as fullname,
-                pa.managerpath AS path, prog_assignment.includechildren, prog_assignment.completiontime,
+            SELECT u.id, " . $usernamefields . ", pa.managerpath AS path,
+            prog_assignment.includechildren, prog_assignment.completiontime,
                 prog_assignment.completionevent, prog_assignment.completioninstance
               FROM {prog_assignment} prog_assignment
         INNER JOIN {user} u ON u.id = prog_assignment.assignmenttypeid
@@ -1162,6 +1164,7 @@ class managers_category extends prog_assignment_category {
         // Convert these into html.
         if (!empty($items)) {
             foreach ($items as $item) {
+                $item->fullname = fullname($item);
                 //sometimes a manager may not have a pos_assignment record e.g. top manager in the tree
                 //so we need to set a default path
                 if (empty($item->path)) {
@@ -1174,13 +1177,15 @@ class managers_category extends prog_assignment_category {
 
     function get_item($itemid) {
         global $DB;
-        $sql = "SELECT u.id, " . $DB->sql_fullname('u.firstname', 'u.lastname') . " AS fullname, pa.managerpath AS path
+        $usernamefields = get_all_user_name_fields(true, 'u');
+        $sql = "SELECT u.id, " . $usernamefields . ", pa.managerpath AS path
                   FROM {user} AS u
              LEFT JOIN {pos_assignment} pa ON u.id = pa.userid AND pa.type = ?
                  WHERE u.id = ?";
         // Sometimes a manager may not have a pos_assignment record e.g. top manager in the tree
         // so we need to set a default path.
         $item = $DB->get_record_sql($sql, array(POSITION_TYPE_PRIMARY, $itemid));
+        $item->fullname = fullname($item);
         if (empty($item->path)) {
             $item->path = "/{$itemid}";
         }
@@ -1299,8 +1304,10 @@ class individuals_category extends prog_assignment_category {
         );
 
         // Go to the database and gets the assignments.
+
+        $usernamefields = get_all_user_name_fields(true, 'individual');
         $items = $DB->get_records_sql(
-            "SELECT individual.id, " . $DB->sql_fullname('individual.firstname', 'individual.lastname') . " as fullname, prog_assignment.completiontime, prog_assignment.completionevent, prog_assignment.completioninstance
+            "SELECT individual.id, " . $usernamefields . ", prog_assignment.completiontime, prog_assignment.completionevent, prog_assignment.completioninstance
                FROM {prog_assignment} prog_assignment
          INNER JOIN {user} individual ON individual.id = prog_assignment.assignmenttypeid
               WHERE prog_assignment.programid = ?
@@ -1309,6 +1316,7 @@ class individuals_category extends prog_assignment_category {
         // Convert these into html.
         if (!empty($items)) {
             foreach ($items as $item) {
+                $item->fullname = fullname($item);
                 $this->data[] = $this->build_row($item);
             }
         }
@@ -1317,7 +1325,11 @@ class individuals_category extends prog_assignment_category {
     function get_item($itemid) {
         global $DB;
 
-        return $DB->get_record_select('user',"id = ?", array($itemid), 'id, ' . $DB->sql_fullname() . ' as fullname');
+        $usernamefields = get_all_user_name_fields(true);
+        $item = $DB->get_record_select('user',"id = ?", array($itemid), 'id, ' . $usernamefields);
+        $item->fullname = fullname($item);
+
+        return $item;
     }
 
     function build_row($item) {

@@ -401,7 +401,7 @@ function install_print_footer($config, $reload=false) {
     echo '</fieldset><fieldset id="nav_buttons">'.$first.$next.'</fieldset>';
 
     $homelink  = '<div class="sitelink">'.
-       '<a title="Totara '. $TOTARA->release .'" href="http://help.totaralms.com/Getting_Started_for_Administrators.htm" onclick="this.target=\'_blank\'">'.
+       '<a title="Totara '. $TOTARA->release .'" href="https://help.totaralms.com/Getting_Started_for_Administrators.htm" onclick="this.target=\'_blank\'">'.
        '<img src="theme/standardtotararesponsive/pix/logo.png" alt="totaralogo" /></a></div>';
 
     echo '</form></div>';

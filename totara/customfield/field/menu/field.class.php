@@ -27,26 +27,37 @@ class customfield_menu extends customfield_base {
     var $datakey;
 
     /**
+     * Get the choose option for the menu of choices.
+     *
+     * @return string
+     */
+    public function get_choose_option() {
+        return get_string('choosedots');
+    }
+
+    /**
      * Constructor method.
      * Pulls out the options for the menu from the database and sets the
      * the corresponding key for the data if it exists
      */
     function customfield_menu($fieldid=0, $itemid=0, $prefix, $tableprefix) {
-        //first call parent constructor
+        // First call parent constructor.
         $this->customfield_base($fieldid, $itemid, $prefix, $tableprefix);
 
-        /// Param 1 for menu type is the options
+        /// Param 1 for menu type is the options.
         $options = explode("\n", $this->field->param1);
         $this->options = array();
-        if ($this->field->required){
-            $this->options[''] = get_string('choose').'...';
-        }
+        // Include the choose option at the beginning.
+        $this->options[''] = $this->get_choose_option();
         foreach($options as $key => $option) {
-            $this->options[$key] = format_string($option);//multilang formatting
+            $this->options[$key] = format_string($option);// Multilang formatting.
         }
 
-        /// Set the data key
-        if ($this->data !== NULL) {
+        // Set the data key.
+        if (empty($this->data)) {
+            // Set default value to the choosedots option.
+            $this->datakey = '';
+        } else if ($this->data !== NULL) {
             $this->datakey = (int)array_search($this->data, $this->options);
         }
     }
@@ -74,13 +85,45 @@ class customfield_menu extends customfield_base {
     }
 
     /**
+     * Changes the customfield value from a string to the key that matches
+     * the string in the array of options.
+     *
+     * @param  object $syncitem     The original syncitem to be processed.
+     * @return object               The syncitem with the customfield data processed.
+     *
+     */
+    public function sync_data_preprocess($syncitem) {
+        // Get the sync value out of the item.
+        $fieldname = $this->inputname;
+        $value = $syncitem->$fieldname;
+
+        // Now get the corresponding option for that value.
+        foreach ($this->options as $key => $option) {
+            if ($option == $value) {
+                $selected = $key;
+            }
+        }
+
+        // If no matching option is found set it to empty.
+        if (!isset($selected)) {
+            $selected = NULL;
+        }
+
+        $syncitem->$fieldname = $selected;
+        return $syncitem;
+    }
+
+    /**
      * The data from the form returns the key. This should be converted to the
-     * respective option string to be saved in database
+     * respective option string to be saved in database.
+     * Don't save data if the option chosen is the default "choose" option as it does not
+     * represent a real option.
      * Overwrites base class accessor method
-     * @param   integer   the key returned from the select input in the form
+     * @param   integer $key the key returned from the select input in the form
+     * @return mixed|null
      */
     function edit_save_data_preprocess($key) {
-        return isset($this->options[$key]) ? $this->options[$key] : NULL;
+        return (isset($this->options[$key]) && $this->options[$key] != $this->get_choose_option()) ? $this->options[$key] : NULL;
     }
 
     /**

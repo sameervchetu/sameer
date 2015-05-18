@@ -688,7 +688,7 @@ class page_requirements_manager {
 
         if (strpos($component, 'core_') === 0) {
             // Must be some core stuff - list here is not complete, this is just the stuff used from multiple places
-            // so that we do nto have to repeat the definition of these modules over and over again.
+            // so that we do not have to repeat the definition of these modules over and over again.
             switch($component) {
                 case 'core_filepicker':
                     $module = array('name'     => 'core_filepicker',

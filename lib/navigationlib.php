@@ -1629,28 +1629,13 @@ class global_navigation extends navigation_node {
             return true;
         }
 
-        // Take into account the visibility of courses.
-        list($visibilitysql, $visibilityparams) = totara_visibility_where(null, 'c.id', 'c.visible', 'c.audiencevisible');
-
         $catcontextsql = context_helper::get_preload_record_columns_sql('ctx');
         $sqlselect = "SELECT cc.*, $catcontextsql
                       FROM {course_categories} cc
                       JOIN {context} ctx ON cc.id = ctx.instanceid";
         $sqlwhere = "WHERE ctx.contextlevel = ".CONTEXT_COURSECAT;
         $sqlorder = "ORDER BY cc.depth ASC, cc.sortorder ASC, cc.id ASC";
-
-        // Show categories if there are courses visible for the current user.
-        $sqlwhere .= " AND EXISTS (
-                       SELECT 1
-                         FROM {course} c
-                   INNER JOIN {context} ctx
-                           ON (ctx.instanceid = c.id AND ctx.contextlevel = :contextlevel)
-                        WHERE c.category = cc.id
-                          AND {$visibilitysql}
-                       )";
-
-        // Add visibility params.
-        $params = array_merge(array('contextlevel' => CONTEXT_COURSE), $visibilityparams);
+        $params = array();
 
         $categoriestoload = array();
         if ($categoryid == self::LOAD_ALL_CATEGORIES) {
@@ -1665,7 +1650,7 @@ class global_navigation extends navigation_node {
             $addedcategories = $this->addedcategories;
             unset($addedcategories[$categoryid]);
             if (count($addedcategories) > 0) {
-                list($sql, $inparams) = $DB->get_in_or_equal(array_keys($addedcategories), SQL_PARAMS_NAMED, 'parent', false);
+                list($sql, $params) = $DB->get_in_or_equal(array_keys($addedcategories), SQL_PARAMS_NAMED, 'parent', false);
                 if ($showbasecategories) {
                     // We need to include categories with parent = 0 as well
                     $sqlwhere .= " AND (cc.parent = :categoryid OR cc.parent = 0) AND cc.parent {$sql}";
@@ -1673,7 +1658,6 @@ class global_navigation extends navigation_node {
                     // All we need is categories that match the parent
                     $sqlwhere .= " AND cc.parent = :categoryid AND cc.parent {$sql}";
                 }
-                $params = array_merge($params, $inparams);
             }
             $params['categoryid'] = $categoryid;
         } else {
@@ -1681,13 +1665,36 @@ class global_navigation extends navigation_node {
             // and load this category plus all its parents and subcategories
             $category = $DB->get_record('course_categories', array('id' => $categoryid), 'path', MUST_EXIST);
             $categoriestoload = explode('/', trim($category->path, '/'));
-            list($selectcatid, $inparamsid) = $DB->get_in_or_equal($categoriestoload, SQL_PARAMS_NAMED);
-            list($selectcatparent, $inparamsparent) = $DB->get_in_or_equal($categoriestoload, SQL_PARAMS_NAMED);
+            list($select, $params) = $DB->get_in_or_equal($categoriestoload, SQL_PARAMS_NAMED, 'id');
             // We are going to use select twice so double the params
-            $params = array_merge($params, $inparamsid, $inparamsparent);
+            $params = array_merge($params, $params);
             $basecategorysql = ($showbasecategories)?' OR cc.depth = 1':'';
-            $sqlwhere .= " AND (cc.id {$selectcatid} OR cc.parent {$selectcatparent}{$basecategorysql})";
+            $sqlwhere .= " AND (cc.id {$select}";
+            list($select, $inparams) = $DB->get_in_or_equal($categoriestoload, SQL_PARAMS_NAMED, 'parent');
+            $params = array_merge($params, $inparams);
+            $sqlwhere .= " OR cc.parent {$select}{$basecategorysql})";
         }
+
+        // Take into account the visibility of courses.
+        list($visibilitysql, $visibilityparams) = totara_visibility_where(null, 'c.id', 'c.visible', 'c.audiencevisible');
+        // Show categories if there are courses visible for the current user.
+        $sqlwhere .= " AND (EXISTS (
+                       SELECT 1
+                         FROM {course} c
+                   INNER JOIN {context} ctx
+                           ON (ctx.instanceid = c.id AND ctx.contextlevel = :contextlevel)
+                        WHERE c.category = cc.id
+                          AND {$visibilitysql}
+                       ) OR
+                        NOT EXISTS (
+                       SELECT 1
+                         FROM {course} c
+                        WHERE c.category = cc.id
+                        ))";
+        // Add visibility params.
+        $visibilityparams = array_merge(array('contextlevel' => CONTEXT_COURSE), $visibilityparams);
+        $params = array_merge($params, $visibilityparams);
+
         $categoriesrs = $DB->get_recordset_sql("$sqlselect $sqlwhere $sqlorder", $params);
         $categories = array();
         foreach ($categoriesrs as $category) {
@@ -2966,19 +2973,23 @@ class global_navigation_for_ajax extends global_navigation {
         $sql = "SELECT cc.*, $catcontextsql
                   FROM {course_categories} cc
                   JOIN {context} ctx ON cc.id = ctx.instanceid
-                 WHERE ctx.contextlevel = ".CONTEXT_COURSECAT."
-                   AND (cc.id = :categoryid1 OR cc.parent = :categoryid2)
-                   AND EXISTS (
+                 WHERE ctx.contextlevel = ".CONTEXT_COURSECAT." AND
+                       (cc.id = :categoryid1 OR cc.parent = :categoryid2) AND
+                       (EXISTS (
                        SELECT 1
                          FROM {course} c
                    INNER JOIN {context} ctx
                            ON (ctx.instanceid = c.id AND ctx.contextlevel = :contextlevel)
                         WHERE c.category = cc.id
-                        AND {$visibilitysql}
+                        AND {$visibilitysql}) OR
+                        NOT EXISTS (
+                       SELECT 1
+                         FROM {course} c
+                        WHERE c.category = cc.id)
                     )
               ORDER BY cc.depth ASC, cc.sortorder ASC, cc.id ASC";
-        $params = array('categoryid1' => $categoryid, 'categoryid2' => $categoryid, 'contextlevel' => CONTEXT_COURSE);
-        $params = array_merge($params, $visibilityparams);
+        $params = array('categoryid1' => $categoryid, 'categoryid2' => $categoryid);
+        $params = array_merge($params, array('contextlevel' => CONTEXT_COURSE), $visibilityparams);
         $categories = $DB->get_recordset_sql($sql, $params, 0, $limit);
         $categorylist = array();
         $subcategories = array();

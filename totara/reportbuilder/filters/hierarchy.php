@@ -82,7 +82,8 @@ class rb_filter_hierarchy extends rb_filter_type {
             $('#show-" . $this->name . "-dialog').removeAttr('disabled');
         }\"";
         $objs = array();
-        $objs[] =& $mform->createElement('select', $this->name.'_op', null, $this->get_operators(), $attr);
+        $objs['select'] =& $mform->createElement('select', $this->name.'_op', null, $this->get_operators(), $attr);
+        $objs['select']->setLabel(get_string('valuefor', 'filters', $label));
         $objs[] =& $mform->createElement('static', 'title'.$this->name, '',
             html_writer::tag('span', '', array('id' => $this->name . 'title', 'class' => 'dialog-result-title')));
         $mform->setType($this->name.'_op', PARAM_TEXT);

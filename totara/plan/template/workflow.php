@@ -75,7 +75,9 @@ if ($confirm) {
 
     // Add checking to this method
     $DB->set_field('dp_template', 'workflow', $workflow, array('id' => $id));
-    add_to_log(SITEID, 'plan', 'changed workflow', "template/workflow.php?id={$id}", "Template ID:{$id}");
+
+    \totara_plan\event\template_updated::create_from_template($template, 'workflow')->trigger();
+
     totara_set_notification(get_string('update_workflow_settings', 'totara_plan'), $returnurl, array('class' => 'notifysuccess'));
 
 }

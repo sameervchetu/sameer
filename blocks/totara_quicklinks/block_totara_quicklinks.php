@@ -124,6 +124,19 @@ class block_totara_quicklinks extends block_base {
 
     }
 
+    function instance_copy($fromid) {
+        global $DB;
+
+        // Copy quicklinks specific data from the specified other quicklink block instance.
+        $links = $DB->get_records('block_quicklinks', array('block_instance_id' => $fromid));
+        foreach ($links as $link) {
+            $link->block_instance_id = $this->instance->id;
+            $DB->insert_record('block_quicklinks', $link);
+        }
+
+        return true;
+    }
+
     function instance_delete() {
         global $DB;
         // Do some additional cleanup

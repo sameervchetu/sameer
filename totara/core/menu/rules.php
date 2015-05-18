@@ -175,7 +175,7 @@ if ($data = $mform->get_data()) {
 
         \totara_core\event\menuitem_updated::create_from_item($data->id)->trigger();
 
-        totara_set_notification(get_string('menuitem:updateaccesssuccess', 'totara_core'), $url, array('class' => 'notifysuccess'));
+        totara_set_notification(get_string('menuitem:updateaccesssuccess', 'totara_core'), $redirecturl, array('class' => 'notifysuccess'));
     } catch (moodle_exception $e) {
         totara_set_notification($e->getMessage());
     }

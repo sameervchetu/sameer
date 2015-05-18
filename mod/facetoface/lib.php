@@ -157,13 +157,30 @@ function facetoface_get_status($statuscode) {
  *   value depends on comparison type)
  */
 function facetoface_get_completion_state($course, $cm, $userid, $type) {
-    global $DB;
+    global $CFG, $DB;
+
+    require_once($CFG->libdir . '/completionlib.php');
 
     $result = $type;
 
     // Get face to face.
-    if (!$facetoface = $DB->get_record('facetoface', array('id' => $cm->instance))) {
+    $sql = "SELECT f.*, cm.completion, cm.completionview
+              FROM {facetoface} f
+        INNER JOIN {course_modules} cm
+                ON cm.instance = f.id
+               AND cm.course = f.course
+        INNER JOIN {modules} m
+                ON m.id = cm.module
+             WHERE m.name='facetoface'
+               AND f.id = :fid";
+    $params = array('fid' => $cm->instance);
+    if (!$facetoface = $DB->get_record_sql($sql, $params)) {
         print_error('cannotfindfacetoface');
+    }
+
+    // If the module is set to manual completion or completion on view we don't need to do anything.
+    if ($facetoface->completion == COMPLETION_TRACKING_MANUAL || $facetoface->completionview) {
+        return $result;
     }
 
     // Only check for existence of tracks and return false if completionstatusrequired.
@@ -192,8 +209,20 @@ function facetoface_get_completion_state($course, $cm, $userid, $type) {
             return completion_info::aggregate_completion_states($type, $result, true);
         }
         return completion_info::aggregate_completion_states($type, $result, false);
+    } else {
+        // At least check they have a valid signup.
+        $sql = "SELECT 1
+                  FROM {facetoface_signups} fs
+                  JOIN {facetoface_sessions} fss
+                    ON fs.sessionid = fss.id
+                 WHERE fs.userid = :uid
+                   AND fss.facetoface = :fid
+                   AND archived != 1";
+        $params = array('fid' => $facetoface->id, 'uid' => $userid);
+        $status = $DB->record_exists_sql($sql, $params);
+
+        return completion_info::aggregate_completion_states($type, $result, $status);
     }
-    return $result;
 }
 
 /**
@@ -327,8 +356,33 @@ function facetoface_add_instance($facetoface) {
     $defaults['status'] = 1;
     $defaults['ccmanager'] = 0;
 
+    // We need to validate the content of these language strings to make sure that they are not too long for the database field
+    // they are about to be written to.
+    $titles = array(
+        'setting:defaultconfirmationsubjectdefault' => get_string('setting:defaultconfirmationsubjectdefault', 'facetoface'),
+        'setting:defaultwaitlistedsubjectdefault' => get_string('setting:defaultwaitlistedsubjectdefault', 'facetoface'),
+        'setting:defaultcancellationsubjectdefault' => get_string('setting:defaultcancellationsubjectdefault', 'facetoface'),
+        'setting:defaultdeclinesubjectdefault' => get_string('setting:defaultdeclinesubjectdefault', 'facetoface'),
+        'setting:defaultremindersubjectdefault' => get_string('setting:defaultremindersubjectdefault', 'facetoface'),
+        'setting:defaultrequestsubjectdefault' => get_string('setting:defaultrequestsubjectdefault', 'facetoface'),
+        'setting:defaultdatetimechangesubjectdefault' => get_string('setting:defaultdatetimechangesubjectdefault', 'facetoface'),
+        'setting:defaulttrainerconfirmationsubjectdefault' => get_string('setting:defaulttrainerconfirmationsubjectdefault', 'facetoface'),
+        'setting:defaulttrainersessioncancellationsubjectdefault' => get_string('setting:defaulttrainersessioncancellationsubjectdefault', 'facetoface'),
+        'setting:defaulttrainersessionunassignedsubjectdefault' => get_string('setting:defaulttrainersessionunassignedsubjectdefault', 'facetoface'),
+        'setting:defaultcancelreservationsubjectdefault' => get_string('setting:defaultcancelreservationsubjectdefault', 'facetoface'),
+        'setting:defaultcancelallreservationssubjectdefault' => get_string('setting:defaultcancelallreservationssubjectdefault', 'facetoface')
+    );
+    foreach ($titles as $key => $title) {
+        if (core_text::strlen($title) > 255) {
+            // We choose to truncate here. If we throw an exception like we should then the user won't be able to add face to face
+            // sessions and the user may not be able to edit the language pack to fix it. Thus we truncate and debug.
+            $titles[$key] = core_text::substr($title, 0, 255);
+            debugging('A face to face notification title was truncated due to its length: ' . $key, DEBUG_NORMAL);
+        }
+    }
+
     $confirmation = new facetoface_notification($defaults, false);
-    $confirmation->title = get_string('setting:defaultconfirmationsubjectdefault', 'facetoface');
+    $confirmation->title = $titles['setting:defaultconfirmationsubjectdefault'];
     $confirmation->body = text_to_html(get_string('setting:defaultconfirmationmessagedefault', 'facetoface'));
     $confirmation->managerprefix = text_to_html(get_string('setting:defaultconfirmationinstrmngrdefault', 'facetoface'));
     $confirmation->conditiontype = MDL_F2F_CONDITION_BOOKING_CONFIRMATION;
@@ -336,13 +390,13 @@ function facetoface_add_instance($facetoface) {
     $confirmation->save();
 
     $waitlist = new facetoface_notification($defaults, false);
-    $waitlist->title = get_string('setting:defaultwaitlistedsubjectdefault', 'facetoface');
+    $waitlist->title = $titles['setting:defaultwaitlistedsubjectdefault'];
     $waitlist->body = text_to_html(get_string('setting:defaultwaitlistedmessagedefault', 'facetoface'));
     $waitlist->conditiontype = MDL_F2F_CONDITION_WAITLISTED_CONFIRMATION;
     $waitlist->save();
 
     $cancellation = new facetoface_notification($defaults, false);
-    $cancellation->title = get_string('setting:defaultcancellationsubjectdefault', 'facetoface');
+    $cancellation->title = $titles['setting:defaultcancellationsubjectdefault'];
     $cancellation->body = text_to_html(get_string('setting:defaultcancellationmessagedefault', 'facetoface'));
     $cancellation->managerprefix = text_to_html(get_string('setting:defaultcancellationinstrmngrdefault', 'facetoface'));
     $cancellation->conditiontype = MDL_F2F_CONDITION_CANCELLATION_CONFIRMATION;
@@ -351,7 +405,7 @@ function facetoface_add_instance($facetoface) {
     $cancellation->save();
 
     $decline = new facetoface_notification($defaults, false);
-    $decline->title = get_string('setting:defaultdeclinesubjectdefault', 'facetoface');
+    $decline->title = $titles['setting:defaultdeclinesubjectdefault'];
     $decline->body = text_to_html(get_string('setting:defaultdeclinemessagedefault', 'facetoface'));
     $decline->managerprefix = text_to_html(get_string('setting:defaultdeclineinstrmngrdefault', 'facetoface'));
     $decline->conditiontype = MDL_F2F_CONDITION_DECLINE_CONFIRMATION;
@@ -360,7 +414,7 @@ function facetoface_add_instance($facetoface) {
     $decline->save();
 
     $reminder = new facetoface_notification($defaults, false);
-    $reminder->title = get_string('setting:defaultremindersubjectdefault', 'facetoface');
+    $reminder->title = $titles['setting:defaultremindersubjectdefault'];
     $reminder->body = text_to_html(get_string('setting:defaultremindermessagedefault', 'facetoface'));
     $reminder->managerprefix = text_to_html(get_string('setting:defaultreminderinstrmngrdefault', 'facetoface'));
     $reminder->conditiontype = MDL_F2F_CONDITION_BEFORE_SESSION;
@@ -372,7 +426,7 @@ function facetoface_add_instance($facetoface) {
     $reminder->save();
 
     $request = new facetoface_notification($defaults, false);
-    $request->title = get_string('setting:defaultrequestsubjectdefault', 'facetoface');
+    $request->title = $titles['setting:defaultrequestsubjectdefault'];
     $request->body = text_to_html(get_string('setting:defaultrequestmessagedefault', 'facetoface'));
     $request->managerprefix = text_to_html(get_string('setting:defaultrequestinstrmngrdefault', 'facetoface'));
     $request->conditiontype = MDL_F2F_CONDITION_BOOKING_REQUEST;
@@ -380,7 +434,7 @@ function facetoface_add_instance($facetoface) {
     $request->save();
 
     $session_change = new facetoface_notification($defaults, false);
-    $session_change->title = get_string('setting:defaultdatetimechangesubjectdefault', 'facetoface');
+    $session_change->title = $titles['setting:defaultdatetimechangesubjectdefault'];
     $session_change->body = text_to_html(get_string('setting:defaultdatetimechangemessagedefault', 'facetoface'));
     $session_change->conditiontype = MDL_F2F_CONDITION_SESSION_DATETIME_CHANGE;
     $reminder->booked = 1;
@@ -388,32 +442,32 @@ function facetoface_add_instance($facetoface) {
     $session_change->save();
 
     $trainer_confirmation = new facetoface_notification($defaults, false);
-    $trainer_confirmation->title = get_string('setting:defaulttrainerconfirmationsubjectdefault', 'facetoface');
+    $trainer_confirmation->title = $titles['setting:defaulttrainerconfirmationsubjectdefault'];
     $trainer_confirmation->body = text_to_html(get_string('setting:defaulttrainerconfirmationmessagedefault', 'facetoface'));
     $trainer_confirmation->conditiontype = MDL_F2F_CONDITION_TRAINER_CONFIRMATION;
     $trainer_confirmation->save();
 
     $trainer_cancellation = new facetoface_notification($defaults, false);
-    $trainer_cancellation->title = get_string('setting:defaulttrainersessioncancellationsubjectdefault', 'facetoface');
+    $trainer_cancellation->title = $titles['setting:defaulttrainersessioncancellationsubjectdefault'];
     $trainer_cancellation->body = text_to_html(get_string('setting:defaulttrainersessioncancellationmessagedefault', 'facetoface'));
     $trainer_cancellation->conditiontype = MDL_F2F_CONDITION_TRAINER_SESSION_CANCELLATION;
     $trainer_cancellation->save();
 
     $trainer_unassigned = new facetoface_notification($defaults, false);
-    $trainer_unassigned->title = get_string('setting:defaulttrainersessionunassignedsubjectdefault', 'facetoface');
+    $trainer_unassigned->title = $titles['setting:defaulttrainersessionunassignedsubjectdefault'];
     $trainer_unassigned->body = text_to_html(get_string('setting:defaulttrainersessionunassignedmessagedefault', 'facetoface'));
     $trainer_unassigned->conditiontype = MDL_F2F_CONDITION_TRAINER_SESSION_UNASSIGNMENT;
     $trainer_unassigned->save();
 
     $cancelreservation = new facetoface_notification($defaults, false);
-    $cancelreservation->title = get_string('setting:defaultcancelreservationsubjectdefault', 'facetoface');
+    $cancelreservation->title = $titles['setting:defaultcancelreservationsubjectdefault'];
     $cancelreservation->body = text_to_html(get_string('setting:defaultcancelreservationmessagedefault', 'facetoface'));
     $cancelreservation->conditiontype = MDL_F2F_CONDITION_RESERVATION_CANCELLED;
     $cancelreservation->cancelled = 1;
     $cancelreservation->save();
 
     $cancelallreservations = new facetoface_notification($defaults, false);
-    $cancelallreservations->title = get_string('setting:defaultcancelallreservationssubjectdefault', 'facetoface');
+    $cancelallreservations->title = $titles['setting:defaultcancelallreservationssubjectdefault'];
     $cancelallreservations->body = text_to_html(get_string('setting:defaultcancelallreservationsmessagedefault', 'facetoface'));
     $cancelallreservations->conditiontype = MDL_F2F_CONDITION_RESERVATION_ALL_CANCELLED;
     $cancelallreservations->cancelled = 1;
@@ -1299,8 +1353,8 @@ function facetoface_get_attendees($sessionid, $status = array(MDL_F2F_STATUS_BOO
     $reservedfields = '';
     $userjoin = 'JOIN';
     if ($includereserved) {
-        $reservedfields = 'su.id AS signupid, bb.firstname AS bookedbyfirstname,
-                        bb.lastname AS bookedbylastname, bb.id AS bookedby, ';
+        $bookedbyusernamefields = get_all_user_name_fields(true, 'bb', null, 'bookedby');
+        $reservedfields = 'su.id AS signupid, '.$bookedbyusernamefields.', bb.id AS bookedby, ';
         $userjoin = 'LEFT JOIN {user} bb ON bb.id = su.bookedby
                      LEFT JOIN';
     }
@@ -4248,19 +4302,25 @@ function facetoface_save_session_room($sessionid, $data) {
     if (empty($data->customroom)) {
         // Pre-defined room
         if (!empty($data->pdroomid)) {
-            // Ensure room is available (if the session date is known).
-            $sessiondates = $DB->get_records('facetoface_sessions_dates', array('sessionid' => $sessionid));
-            $timeslots = array();
-            foreach ($sessiondates as $d) {
-                $timeslots[] = array($d->timestart, $d->timefinish);
-            }
-            if (!$availablerooms = facetoface_get_available_rooms($timeslots, 'id', array($sessionid))) {
-                // No pre-defined rooms available!
-                return false;
-            }
-            if (!in_array($data->pdroomid, array_keys($availablerooms))) {
-                // Selected pre-defined room not available!
-                return false;
+            if ($data->pdroomid == $session->roomid && $data->datetimeknown == $session->datetimeknown) {
+                // Same room, no need to update
+                return true;
+            } elseif (!empty($data->datetimeknown)) {
+                // Ensure room is available (if the session date is known)
+                $sessiondates = $DB->get_records('facetoface_sessions_dates', array('sessionid' => $sessionid));
+                $timeslots = array();
+                foreach ($sessiondates as $d) {
+                    $timeslots = array($d->timestart, $d->timefinish);
+                }
+                if (!$availablerooms = facetoface_get_available_rooms($timeslots, 'id', array($sessionid))) {
+                    // No pre-defined rooms available!
+                    return false;
+                }
+
+                if (!in_array($data->pdroomid, array_keys($availablerooms))) {
+                    // Selected pre-defined room not available!
+                    return false;
+                }
             }
         }
 
@@ -5230,10 +5290,14 @@ function facetoface_pluginfile($course, $cm, $context, $filearea, $args, $forced
  * @param int $courseid
  * @return boolean
  */
-function facetoface_archive_completion($userid, $courseid) {
+function facetoface_archive_completion($userid, $courseid, $windowopens = NULL) {
     global $DB, $CFG;
 
     require_once($CFG->libdir . '/completionlib.php');
+
+    if (!isset($windowopens)) {
+        $windowopens = time();
+    }
 
     $course = $DB->get_record('course', array('id' => $courseid), '*', MUST_EXIST);
     $completion = new completion_info($course);
@@ -5249,7 +5313,7 @@ function facetoface_archive_completion($userid, $courseid) {
     $facetofaces = $DB->get_records_sql($sql, array('courseid' => $courseid, 'userid' => $userid));
     foreach ($facetofaces as $facetoface) {
         // Add an archive flag.
-        $params = array('facetofaceid' => $facetoface->id, 'userid' => $userid, 'archived' => 1, 'archived2' => 1, 'timenow' => time());
+        $params = array('facetofaceid' => $facetoface->id, 'userid' => $userid, 'archived' => 1, 'archived2' => 1, 'windowopens' => $windowopens);
         $sql = "UPDATE {facetoface_signups}
                 SET archived = :archived
                 WHERE userid = :userid
@@ -5260,7 +5324,7 @@ function facetoface_archive_completion($userid, $courseid) {
                             WHERE s.id = {facetoface_signups}.sessionid
                             AND s.facetoface = :facetofaceid
                             GROUP BY s.id
-                            HAVING MAX(sd.timefinish) < :timenow)";
+                            HAVING MAX(sd.timefinish) < :windowopens)";
         $DB->execute($sql, $params);
 
         // Reset the grades.
@@ -5734,14 +5798,21 @@ function facetoface_get_staff_to_allocate($facetoface, $session, $managerid = nu
     if (!$managerid) {
         $managerid = $USER->id;
     }
+
     $ret = (object)array('potential' => array(), 'current' => array(), 'othersession' => array(), 'cannotunallocate' => array());
     if (!$staff = totara_get_staff($managerid)) {
         return $ret;
     }
 
+    // Get facetoface "multiple signups per session" setting.
+    $multiplesignups = $facetoface->multiplesessions;
+
     list($usql, $params) = $DB->get_in_or_equal($staff, SQL_PARAMS_NAMED);
-    // Get list of sign-ups that already exist for these users.
-    $sql = "SELECT u.*, su.sessionid, su.bookedby, b.firstname AS bookedbyfirstname, b.lastname AS bookedbylastname,
+    // Get list of signed-ups that already exist for these users.
+    $sql = 'SELECT CASE
+                   WHEN su.sessionid IS NULL THEN '. sql_cast2char('u.id') .'
+                   ELSE '. $DB->sql_concat(sql_cast2char('u.id'), "'_'", sql_cast2char('su.sessionid')) . ' END
+                   AS uniqueid , u.*, su.sessionid, su.bookedby, b.firstname AS bookedbyfirstname, b.lastname AS bookedbylastname,
                    su.statuscode
               FROM {user} u
               LEFT JOIN (
@@ -5752,41 +5823,83 @@ function facetoface_get_staff_to_allocate($facetoface, $session, $managerid = nu
                    WHERE s.facetoface = :facetofaceid AND sus.statuscode > :status
               ) su ON su.userid = u.id
               LEFT JOIN {user} b ON b.id = su.bookedby
-             WHERE u.id $usql";
+             WHERE u.id ' . $usql;
 
     $params['facetofaceid'] = $facetoface->id;
     // Statuses greater than declined to handle cases where people change their mind.
     $params['status'] = MDL_F2F_STATUS_DECLINED;
     $users = $DB->get_records_sql($sql, $params);
 
-    foreach ($users as $user) {
-        if (!$user->sessionid) {
-            // User has no bookings for this activity => potentially can be allocated.
-            $ret->potential[$user->id] = $user;
-        } else {
-            if ($user->bookedby != $managerid) {
-                if ($user->bookedby == 0) {
-                    $user->cannotremove = 'selfbooked';
-                } else {
-                    $user->cannotremove = 'otherbookedby'; // Booked by someone else - cannot be unbooked.
-                }
-                $ret->cannotunallocate[$user->id] = $user;
+    foreach ($staff as $member) {
+        // Get the signups for the user in this activity.
+        $usersignups = totara_search_for_value($users, 'id', TOTARA_SEARCH_OP_EQUAL, $member);
+
+        // Get signup for this user in this session (if exists).
+        $usersignupsession = totara_search_for_value($usersignups, 'sessionid', TOTARA_SEARCH_OP_EQUAL, $session->id);
+
+        // Remove current sign-up for session from $usersignups.
+        if (!empty($usersignupsession)) {
+            $usersignupsession = reset($usersignupsession);
+            unset($usersignups[$usersignupsession->uniqueid]);
+        }
+
+        // Loop through all user sessions except the current session $session.
+        foreach ($usersignups as $user) {
+            // If sessionid is null, nothing to do here.
+            if ($user->sessionid === null) {
+                continue;
             }
 
-            if ($user->sessionid != $session->id) {
-                // Allocated to a different session - cannot be booked/unbooked.
-                $ret->othersession[$user->id] = $user;
-            } else {
-                if (empty($user->cannotremove) && $user->statuscode && $user->statuscode > MDL_F2F_STATUS_BOOKED) {
-                    $user->cannotremove = 'attendancetaken'; // Attendance taken - cannot be unbooked.
-                    $ret->cannotunallocate[$user->id] = $user;
-                }
-                $ret->current[$user->id] = $user;
+            if (!facetoface_user_can_be_unallocated($user, $managerid)) {
+                $ret->cannotunallocate[$user->id] = $user;
             }
+            // Allocated to a different session - cannot be unbooked here.
+            $ret->othersession[$user->id] = $user;
+
+        }
+
+        // If the user doesn't have a sign-up for this session check if we can put him in the potential list.
+        // Otherwise, verify if the user can or cannot be unallocated.
+        if (empty($usersignupsession)) {
+            // Multiple sign-ups on OR user has not sign-ups for other sessions in the facetoface.
+            $currentuser = reset($usersignups);
+            if ($multiplesignups) {
+                $ret->potential[$member] = $currentuser;
+            } else if (array_key_exists($currentuser->id, $ret->othersession) === false) {
+                $ret->potential[$member] = $currentuser;
+            }
+        } else {
+            if (!facetoface_user_can_be_unallocated($usersignupsession, $managerid)) {
+                $ret->cannotunallocate[$usersignupsession->id] = $usersignupsession;
+            }
+            $ret->current[$member] = $usersignupsession;
         }
     }
 
     return $ret;
+}
+
+/**
+ * Given a user, determine if he can be unallocated from the list.
+ * If he/she cannot be unallocated, add the reason why.
+ *
+ * This function is used by facetoface_get_staff_to_allocate.
+ *
+ * @param object $user A user object that must contain id, bookedby and status code
+ * @param int $managerid The user's manager ID.
+ * @return bool True if the user can be unallocated, false otherwise.
+ */
+function facetoface_user_can_be_unallocated(&$user, $managerid) {
+    // Booked by someone else or self booking - cannot be unbooked.
+    if ($user->bookedby != $managerid) {
+        $user->cannotremove = ($user->bookedby == 0) ? 'selfbooked' : 'otherbookedby';
+        return false;
+    } else if ($user->statuscode && $user->statuscode > MDL_F2F_STATUS_BOOKED) {
+        $user->cannotremove = 'attendancetaken'; // Attendance taken - cannot be unbooked.
+        return false;
+    }
+
+    return true;
 }
 
 /**
@@ -6109,3 +6222,64 @@ function facetoface_get_user_current_status($sessionid, $userid) {
 
 }
 
+/**
+ * Get a count of the number of spaces reserved by each manager
+ * for a given session.
+ *
+ * @param int $sessionid
+ *
+ * @return array Array of reservations
+ */
+function facetoface_get_session_reservations($sessionid) {
+    global $DB;
+
+    $userfields =  get_all_user_name_fields(true, 'u');
+
+    $reservation_sql = "SELECT bookedby, COUNT(fs.id) as reservedspaces, sessionid, {$userfields}
+        FROM {facetoface_signups} fs
+        JOIN {user} u ON fs.bookedby = u.id
+        WHERE bookedby != :bookedby
+        AND userid = :userid
+        AND sessionid = :sessionid
+        GROUP BY
+        bookedby, sessionid, {$userfields}";
+
+    $reservation_params = array('bookedby' => 0, 'userid' => 0, 'sessionid' => $sessionid);
+
+    $reservations = $DB->get_records_sql($reservation_sql, $reservation_params);
+
+    return $reservations;
+}
+
+/**
+ * Delete reservations for a given session and manager
+ *
+ * @param int $sessionid
+ * @param int $managerid
+ *
+ * @return bool True if dng of the reservations succeeded
+ */
+function facetoface_delete_reservations($sessionid, $managerid) {
+    global $DB;
+
+    $signups = $DB->get_records_sql('SELECT id FROM {facetoface_signups} WHERE userid = 0 AND sessionid = :sessionid AND bookedby = :managerid',
+        array('sessionid' => $sessionid, 'managerid' => $managerid));
+
+    $transaction = $DB->start_delegated_transaction();
+    $result = true;
+
+    if ($signups) {
+        list($signupwhere, $signupparams) = $DB->get_in_or_equal(array_keys($signups));
+        // Delete signup status records.
+        $result = $DB->delete_records_select('facetoface_signups_status', 'signupid ' . $signupwhere
+            , $signupparams);
+    }
+
+    // Delete signups.
+    $result = $result && $DB->delete_records('facetoface_signups',
+            array('userid' => 0, 'sessionid' => $sessionid, 'bookedby' => $managerid));
+
+    $transaction->allow_commit();
+
+    return $result;
+}

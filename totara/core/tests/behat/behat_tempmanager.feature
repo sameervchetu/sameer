@@ -5,7 +5,8 @@ Feature: Test temporary managers
     I need to be able to assign a temporary manager
 
     Background:
-        Given the following "users" exist:
+        Given I am on a totara site
+        And the following "users" exist:
             | username | firstname | lastname | email | role | context |
             | user1 | user | 1 | user1@example.com | learner | system |
             | user2 | user | 2 | user2@example.com | learner | system |

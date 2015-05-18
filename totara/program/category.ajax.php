@@ -38,8 +38,6 @@ $type = required_param('type', PARAM_ALPHA);
 $id = required_param('id', PARAM_INT);
 $categorytype = required_param('categorytype', PARAM_ALPHA);
 
-$programrenderer->header();
-
 switch ($type) {
     case 'summary':
         require_once('program.class.php');
@@ -52,6 +50,6 @@ switch ($type) {
         require_once('lib.php');
         $category = coursecat::get($id);
         $categorytype = required_param('categorytype', PARAM_ALPHA);
-        echo json_encode($programrenderer->program_category($category, $categorytype, true));
+        echo json_encode($programrenderer->progcat_ajax($category, $categorytype));
         break;
 }

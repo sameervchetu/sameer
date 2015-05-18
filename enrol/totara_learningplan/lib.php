@@ -106,10 +106,10 @@ class enrol_totara_learningplan_plugin extends enrol_plugin {
      * This should return either a timestamp in the future or false.
      *
      * @param stdClass $instance course enrol instance
-     * @return bool|int false means not enrolled, integer means timeend
+     * @return bool false means not enrolled
      */
     public function try_autoenrol(stdClass $instance) {
-        global $OUTPUT, $USER, $DB;
+        global $USER, $DB;
 
         $course = $DB->get_record('course', array('id' => $instance->courseid));
         if ($this->is_user_approved($instance->courseid)) {
@@ -117,9 +117,8 @@ class enrol_totara_learningplan_plugin extends enrol_plugin {
             $instance->roleid = parent::get_config('roleid');
             parent::enrol_user($instance, $USER->id, $instance->roleid);
 
-            totara_set_notification($OUTPUT->container(get_string('nowenrolled', 'enrol_totara_learningplan', $course->fullname), 'plan_box'), null, array('class' => 'notifysuccess'));
-            // No time limit on Plan enrolment.
-            return 0;
+            $viewurl = new moodle_url('/course/view.php', array('id' => $course->id));
+            totara_set_notification(get_string('nowenrolled', 'enrol_totara_learningplan', $course->fullname), $viewurl->out(), array('class' => 'notifysuccess'));
         }
         return false;
     }

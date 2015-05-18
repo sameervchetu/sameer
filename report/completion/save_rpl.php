@@ -76,7 +76,7 @@ require_login($course);
 
 $context = context_course::instance($course->id);
 require_capability('report/completion:view', $context);
-
+require_sesskey();
 
 ///
 /// Check RPL is enabled
@@ -107,7 +107,7 @@ if (!empty($cmid)) {
 
 // Complete
 if (strlen($rpl)) {
-    $completion->rpl = addslashes($rpl);
+    $completion->rpl = $rpl;
     $completion->mark_complete();
 // If no RPL, uncomplete user, and let aggregation do its thing
 } else {
@@ -116,6 +116,6 @@ if (strlen($rpl)) {
 
 // Redirect, if requested (not an ajax request)
 if ($redirect) {
-    header('Location: '.$CFG->wwwroot.'/report/completion/index.php?course='.$course_id.'&sort='.$sort.'&start='.$start);
-    exit();
+    $url = new moodle_url('/report/completion/index.php', array('course' => $course_id, 'sort' => $sort, 'start' => $start));
+    redirect($url);
 }

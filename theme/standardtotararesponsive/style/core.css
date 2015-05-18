@@ -1467,3 +1467,10 @@ select.totara-limited-width {
     width: auto;
     position: relative;
 }
+
+div.criteria-description {
+    padding: 10px 15px;
+    margin: 5px 0px;
+    background: none repeat scroll 0 0 #f9f9f9;
+    border: 1px solid #EEE;
+}

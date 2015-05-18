@@ -5,7 +5,8 @@ Feature: Perform basic dashboard administration
   I need to manage master version of dashboard layout
 
   Background:
-    Given the following totara_dashboards exist:
+    Given I am on a totara site
+    And the following totara_dashboards exist:
     | name | locked | published |
     | Dashboard for edit | 1 | 1 |
 
@@ -22,7 +23,7 @@ Feature: Perform basic dashboard administration
 
   Scenario: Edit dashboard
     Given I log in as "admin"
-   And I navigate to "Dashboards" node in "Site administration > Appearance"
+    And I navigate to "Dashboards" node in "Site administration > Appearance"
     And I should see "Dashboard for edit" in the ".generaltable" "css_element"
     And I click on ".edit" "css_element" in the "Dashboard for edit" "table_row"
     And I set the following fields to these values:

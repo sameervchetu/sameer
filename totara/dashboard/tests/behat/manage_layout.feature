@@ -5,7 +5,8 @@ Feature: Perform basic dashboard layout changes
   I need to manage dashboard layout by adding/deleting blocks
 
   Background:
-    Given the following totara_dashboards exist:
+    Given I am on a totara site
+    And the following totara_dashboards exist:
     | name | locked | published |
     | Dashboard for edit | 1 | 1 |
 

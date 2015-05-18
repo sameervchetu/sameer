@@ -117,6 +117,30 @@ abstract class course_set {
         return $completiontypestr;
     }
 
+    /**
+     * Get html definition list of completion settings details (any, some, or all courses, min. number)
+     * This does not include list of courses itself.
+     *
+     * @return string
+     */
+    protected function get_completion_explanation_html() {
+        $out = '';
+        // Explain some or all courses must be completed.
+        $typestr = get_string('completeallcourses', 'totara_program');
+        if ($this->completiontype != COMPLETIONTYPE_ALL) {
+            if ($this->completiontype == COMPLETIONTYPE_ANY) {
+                // Only one course must be completed.
+                $typestr = get_string('completeanycourse', 'totara_program');
+            } else {
+                $a = new stdClass();
+                $a->mincourses = $this->mincourses;
+                $typestr = get_string('completemincourses', 'totara_program', $a);
+            }
+        }
+        $out .= html_writer::div($typestr);
+        return $out;
+    }
+
     public function get_set_prefix() {
         return $this->uniqueid;
     }
@@ -357,7 +381,7 @@ abstract class course_set {
 
         $out = '';
         $out .= $this->label.' (';
-        if ($this->timeallowedperiod !== TIME_SELECTOR_INFINITY) {
+        if ($this->timeallowedperiod !== TIME_SELECTOR_NOMINIMUM) {
             $out .= $this->timeallowednum.' ';
         }
         $out .= $timeallowedperiodstr.')';
@@ -891,10 +915,10 @@ class multi_course_set extends course_set {
             case COMPLETIONTYPE_SOME:
                 $str = new stdClass();
                 $str->mincourses = $this->mincourses;
-                if (!$str->sumfield = $DB->get_field('course_info_field', 'fullname', array('id' => $this->coursesumfield))) {
-                    $str->sumfield = '';
+                $str->sumfield = '';
+                if ($coursecustomfield = $DB->get_record('course_info_field', array('id' => $this->coursesumfield))) {
+                    $str->sumfield = format_string($coursecustomfield->fullname);
                 }
-                $str->sumfield = format_string($str->sumfield);
                 $str->sumfieldtotal = $this->coursesumfieldtotal;
                 if (!empty($str->mincourses) && !empty($str->sumfield) && !empty($str->sumfieldtotal)) {
                     $completestr = get_string('completemincoursesminsum', 'totara_program', $str);
@@ -903,7 +927,15 @@ class multi_course_set extends course_set {
                 } else {
                     $completestr = get_string('completeminsumfield', 'totara_program', $str);
                 }
+
+
                 $out .= html_writer::tag('p', html_writer::tag('strong', $completestr));
+                if (!empty($str->sumfield)) {
+                    // Add information about the criteria.
+                    $criteriacompletionset = get_string('criteriacompletioncourseset', 'totara_program', $str->sumfield);
+                    $out .= html_writer::tag('p', html_writer::tag('strong', $criteriacompletionset));
+                }
+
                 break;
         }
 
@@ -911,13 +943,19 @@ class multi_course_set extends course_set {
 
         if ($this->timeallowed > 0) {
             $out .= html_writer::tag('p', get_string('allowtimeforset', 'totara_program', $timeallowance));
-        } else {
-            $out .= html_writer::tag('p', get_string('allowtimeforsetinfinity', 'totara_program'));
         }
 
+        $customfieldcriteria = $this->completiontype == COMPLETIONTYPE_SOME &&
+            $coursecustomfield && $coursecustomfield->hidden != 1;
         if (count($this->courses) > 0) {
             $table = new html_table();
-            $table->head = array(get_string('coursename', 'totara_program'), get_string('actions'));
+            $table->head = array(get_string('coursename', 'totara_program'));
+
+            if ($customfieldcriteria) {
+                $table->head[] = $str->sumfield;
+                $table->colclasses[] = 'criteriacourseset';
+            }
+            $table->head[] = get_string('actions');
             $table->colclasses = array('coursename', 'launchcourse');
             $table->attributes['class'] = 'fullwidth generaltable';
             if ($userid) {
@@ -976,6 +1014,14 @@ class multi_course_set extends course_set {
                     }
                 }
                 $cells[] = new html_table_cell($coursedetails);
+                if ($customfieldcriteria) {
+                    $customfieldsdata = customfield_get_data($course, 'course', 'course');
+                    $criteria = $coursecustomfield->defaultdata;
+                    if (array_key_exists($coursecustomfield->fullname, $customfieldsdata)) {
+                        $criteria = $customfieldsdata[$coursecustomfield->fullname];
+                    }
+                    $cells[] = new html_table_cell($criteria);
+                }
                 $cells[] = new html_table_cell($launch);
 
                 if ($userid) {
@@ -1041,7 +1087,7 @@ class multi_course_set extends course_set {
      */
     public function display_form_element() {
 
-        $completiontypestr = $this->completiontype == COMPLETIONTYPE_ALL ? get_string('and', 'totara_program') : get_string('or', 'totara_program');
+        $completiontypestr = $this->get_completion_type_string();
         $courses = $this->courses;
 
         $out = '';
@@ -1061,6 +1107,7 @@ class multi_course_set extends course_set {
         }
 
         $out .= html_writer::end_tag('div');
+        $out .= $this->get_completion_explanation_html();
 
         if (!isset($this->islastset) || $this->islastset === false) {
             if ($this->nextsetoperator != 0) {
@@ -1271,9 +1318,8 @@ class multi_course_set extends course_set {
 
         // Add the course set label
         if ($updateform) {
-            $mform->addElement('text', $prefix.'label', $this->label, array('size' => '40', 'maxlength' => '255'));
+            $mform->addElement('text', $prefix.'label', $this->label, array('size' => '40', 'maxlength' => '255', 'id' => $prefix.'label'));
             $mform->setType($prefix.'label', PARAM_TEXT);
-            //$mform->addRule($prefix.'label', get_string('required'), 'required', null, 'client');
             $template_values['%'.$prefix.'label%'] = array('name' => $prefix.'label', 'value' => null);
         }
         $helpbutton = $OUTPUT->help_icon('setlabel', 'totara_program');
@@ -1295,7 +1341,7 @@ class multi_course_set extends course_set {
             );
             $onchange = 'return M.totara_programcontent.changeCompletionTypeString(this, '.$prefix.');';
             $mform->addElement('select', $prefix.'completiontype', get_string('label:learnermustcomplete', 'totara_program'),
-                             $completiontypeoptions, array('onchange' => $onchange));
+                             $completiontypeoptions, array('class' => 'completiontype', 'onchange' => $onchange, 'id' => $prefix.'completiontype'));
             $mform->setType($prefix.'completiontype', PARAM_INT);
             $mform->setDefault($prefix.'completiontype', COMPLETIONTYPE_ALL);
             $template_values['%'.$prefix.'completiontype%'] = array('name' => $prefix.'completiontype', 'value' => null);
@@ -1312,7 +1358,7 @@ class multi_course_set extends course_set {
 
         // Min courses.
         if ($updateform) {
-            $mform->addElement('text', $prefix.'mincourses', $this->mincourses, array('size' => '10', 'maxlength' => '255'));
+            $mform->addElement('text', $prefix.'mincourses', $this->mincourses, array('size' => '10', 'maxlength' => '255', 'id' => $prefix.'mincourses'));
             $mform->setType($prefix.'mincourses', PARAM_INT);
             $template_values['%'.$prefix.'mincourses%'] = array('name' => $prefix.'mincourses', 'value' => null);
         }
@@ -1339,7 +1385,7 @@ class multi_course_set extends course_set {
             }
             $customfields = array(0 => get_string('none')) + $customfields;
             $mform->addElement('select', $prefix.'coursesumfield', get_string('label:coursescorefield', 'totara_program'),
-                             $customfields);
+                             $customfields, array('id' => $prefix.'coursesumfield'));
             $mform->setType($prefix.'coursesumfield', PARAM_INT);
             $template_values['%'.$prefix.'coursesumfield%'] = array('name' => $prefix.'coursesumfield', 'value' => null);
         }
@@ -1355,7 +1401,7 @@ class multi_course_set extends course_set {
 
         // Course field sum min val.
         if ($updateform) {
-            $mform->addElement('text', $prefix.'coursesumfieldtotal', $this->coursesumfieldtotal, array('size' => '10', 'maxlength' => '255'));
+            $mform->addElement('text', $prefix.'coursesumfieldtotal', $this->coursesumfieldtotal, array('size' => '10', 'maxlength' => '255', 'id' => $prefix.'coursesumfieldtotal'));
             $mform->setType($prefix.'coursesumfieldtotal', PARAM_INT);
             $template_values['%'.$prefix.'coursesumfieldtotal%'] = array('name' => $prefix.'coursesumfieldtotal', 'value' => null);
         }
@@ -1371,13 +1417,14 @@ class multi_course_set extends course_set {
 
         // Add the time allowance selection group
         if ($updateform) {
-            $mform->addElement('text', $prefix.'timeallowednum', $this->timeallowednum, array('size' => 4, 'maxlength' => 3));
+            $element = $mform->addElement('text', $prefix.'timeallowednum', $this->timeallowednum, array('size' => 4, 'maxlength' => 3, 'id' => $prefix.'timeallowance'));
             $mform->setType($prefix.'timeallowednum', PARAM_INT);
             $mform->addRule($prefix.'timeallowednum', get_string('required'), 'required', null, 'server');
 
             $timeallowanceoptions = program_utilities::get_standard_time_allowance_options(true);
-            $mform->addElement('select', $prefix.'timeallowedperiod', '', $timeallowanceoptions);
+            $select = $mform->addElement('select', $prefix.'timeallowedperiod', '', $timeallowanceoptions, array('id' => $prefix.'timeperiod'));
             $mform->setType($prefix.'timeallowedperiod', PARAM_INT);
+            $templatehtml .= html_writer::tag('label', get_string('timeperiod', 'totara_program'), array('for' => $prefix.'timeperiod', 'class' => 'accesshide'));
 
             $template_values['%'.$prefix.'timeallowednum%'] = array('name'=>$prefix.'timeallowednum', 'value'=>null);
             $template_values['%'.$prefix.'timeallowedperiod%'] = array('name'=>$prefix.'timeallowedperiod', 'value'=>null);
@@ -1403,7 +1450,11 @@ class multi_course_set extends course_set {
         $templatehtml .= html_writer::start_tag('div', array('class' => 'fitem'));
         $templatehtml .= html_writer::tag('div', '', array('class' => 'fitemtitle'));
         $templatehtml .= html_writer::start_tag('div', array('class' => 'courseadder felement'));
-        $courseoptions = $DB->get_records_select_menu('course', 'id <> ?', array(SITEID), 'fullname ASC', 'id,fullname');
+        $coursenames = $DB->get_records_select_menu('course', 'id <> ?', array(SITEID), 'fullname ASC', 'id,fullname');
+        $courseoptions = array();
+        foreach ($coursenames as $coursename) {
+            $courseoptions[] = format_string($coursename);
+        }
         if (count($courseoptions) > 0) {
             if ($updateform) {
                 $mform->addElement('select',  $prefix.'courseid', '', $courseoptions);
@@ -1473,7 +1524,7 @@ class multi_course_set extends course_set {
                 $content .= $this->get_course_warnings($course);
                 $list .= html_writer::tag('li', $content);
             }
-            $ulattrs = array('id' => $prefix.'courselist', 'class' => 'course_list');
+            $ulattrs = array('id' => $prefix.'displaycourselist', 'class' => 'course_list');
             $templatehtml .= html_writer::tag('div', html_writer::tag('ul', $list, $ulattrs), array('class' => 'felement'));
 
             $courseidsarray = array();
@@ -1732,8 +1783,6 @@ class competency_course_set extends course_set {
 
         if ($this->timeallowed > 0) {
             $out .= html_writer::tag('p', get_string('allowtimeforset', 'totara_program', $timeallowance));
-        } else {
-            $out .= html_writer::tag('p', get_string('allowtimeforsetinfinity', 'totara_program'));
         }
 
         $courses = $this->get_competency_courses();
@@ -1814,7 +1863,7 @@ class competency_course_set extends course_set {
      */
     public function display_form_element() {
 
-        $completiontypestr = $this->get_completion_type() == COMPLETIONTYPE_ALL ? get_string('and', 'totara_program') : get_string('or', 'totara_program');
+        $completiontypestr = $this->get_completion_type_string();
         $courses = $this->get_competency_courses();
 
         $out = '';
@@ -1834,6 +1883,7 @@ class competency_course_set extends course_set {
         }
 
         $out .= html_writer::end_tag('div');
+        $out .= $this->get_completion_explanation_html();
 
         if ($this->nextsetoperator != 0) {
             $out .= html_writer::start_tag('div', array('class' => 'nextsetoperator'));
@@ -2287,8 +2337,6 @@ class recurring_course_set extends course_set {
 
         if ($this->timeallowed > 0) {
             $out .= html_writer::tag('p', get_string('allowtimeforset', 'totara_program', $timeallowance));
-        } else {
-            $out .= html_writer::tag('p', get_string('allowtimeforsetinfinity', 'totara_program'));
         }
 
         if (is_object($this->course)) {

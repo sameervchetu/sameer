@@ -118,17 +118,21 @@ if ($valueform->is_cancelled()) {
         // New objective scale value
         unset($valuenew->id);
         $valuenew->id = $DB->insert_record('dp_objective_scale_value', $valuenew);
-        add_to_log(SITEID, 'objectivescales', 'scale value added', "view.php?id={$valuenew->objscaleid}");
+        $valuenew = file_postupdate_standard_editor($valuenew, 'description', $TEXTAREA_OPTIONS, $TEXTAREA_OPTIONS['context'], 'totara_plan', 'dp_objective_scale_value', $valuenew->id);
+        $DB->update_record('dp_objective_scale_value', $valuenew);
+
         $notification = get_string('objectivescalevalueadded', 'totara_plan', format_string($valuenew->name));
+
     } else {
         // Updating objective scale value
+        $valuenew = file_postupdate_standard_editor($valuenew, 'description', $TEXTAREA_OPTIONS, $TEXTAREA_OPTIONS['context'], 'totara_plan', 'dp_objective_scale_value', $valuenew->id);
         $DB->update_record('dp_objective_scale_value', $valuenew);
-        // Log
-        add_to_log(SITEID, 'objectivescales', 'scale value updated', "view.php?id={$valuenew->objscaleid}");
-       $notification = get_string('objectivescalevalueupdated', 'totara_plan', format_string($valuenew->name));
+
+        $notification = get_string('objectivescalevalueupdated', 'totara_plan', format_string($valuenew->name));
     }
-    $valuenew = file_postupdate_standard_editor($valuenew, 'description', $TEXTAREA_OPTIONS, $TEXTAREA_OPTIONS['context'], 'totara_plan', 'dp_objective_scale_value', $valuenew->id);
-    $DB->set_field('dp_objective_scale_value', 'description', $valuenew->description, array('id' => $valuenew->id));
+
+    \totara_plan\event\objective_scale_updated::create_from_scale($scale)->trigger();
+
     totara_set_notification($notification, "$CFG->wwwroot/totara/plan/objectivescales/view.php?id={$valuenew->objscaleid}", array('class' => 'notifysuccess'));
 }
 

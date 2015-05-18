@@ -72,8 +72,9 @@ if (has_capability('totara/plan:canselectplantemplate', context_system::instance
 //
 // Display plan list
 //
+$context = context_system::instance();
 $PAGE->set_url('/totara/plan/index.php');
-$PAGE->set_context(context_system::instance());
+$PAGE->set_context($context);
 $PAGE->set_pagelayout('report');
 
 if ($role == 'manager') {
@@ -104,17 +105,16 @@ echo $OUTPUT->container_start('', 'dp-plans-description');
 
 if ($planuser == $USER->id) {
     $planinstructions = get_string('planinstructions', 'totara_plan') . ' ';
-    add_to_log(SITEID, 'plan', 'view all', "index.php?userid={$planuser}");
 } else {
     $user = $DB->get_record('user', array('id' => $planuser));
     $userfullname = fullname($user);
     $planinstructions = get_string('planinstructionsuser', 'totara_plan', $userfullname) . ' ';
-    add_to_log(SITEID, 'plan', 'view all', "index.php?userid={$planuser}", $userfullname);
 }
 if ($canaddplan) {
     $planinstructions .= get_string('planinstructions_add', 'totara_plan');
 }
 
+\totara_plan\event\plan_list_viewed::create_from_userid($planuser)->trigger();
 
 echo html_writer::tag('p', $planinstructions, array('class' => 'instructional_text'));
 

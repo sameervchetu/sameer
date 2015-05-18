@@ -113,6 +113,7 @@ M.totara_plan_component = M.totara_plan_component || {
         // Split response into table and div
         var new_table = $(response).find('table.dp-plan-component-items');
         var new_planbox = $(response).filter('.plan_box');
+        var new_paging = $(response).filter('.paging')[0];
 
         // Grab table
         var table = $('form#dp-component-update table.dp-plan-component-items');
@@ -143,6 +144,7 @@ M.totara_plan_component = M.totara_plan_component || {
 
         // Replace plan message box
         $('div.plan_box').replaceWith(new_planbox);
+        $('.paging').replaceWith(new_paging);
 
         // Add duedate datepicker
         var format = M.util.get_string('datepickerlongyeardisplayformat', 'totara_core');

@@ -47,8 +47,7 @@ abstract class dp_base_component {
     /**
      * Reference to the plan object
      *
-     * @access  public
-     * @var     object
+     * @var     development_plan
      */
     protected $plan;
 
@@ -57,9 +56,7 @@ abstract class dp_base_component {
      * Constructor, add reference to plan object and
      * check required properties are set
      *
-     * @access  public
-     * @param   object  $plan
-     * @return  void
+     * @param   development_plan  $plan
      */
     public function __construct($plan) {
         $this->plan = $plan;

@@ -34,6 +34,8 @@ check_learningplan_enabled();
 check_program_enabled();
 
 require_login();
+$systemcontext = context_system::instance();
+$PAGE->set_context($systemcontext);
 
 ///
 /// Setup / loading data
@@ -59,7 +61,7 @@ $component = $plan->get_component($componentname);
 ///
 /// Permissions check
 ///
-require_capability('totara/plan:accessplan', context_system::instance());
+require_capability('totara/plan:accessplan', $systemcontext);
 
 if (!$component->can_update_items()) {
     print_error('error:cannotupdateitems', 'totara_plan');

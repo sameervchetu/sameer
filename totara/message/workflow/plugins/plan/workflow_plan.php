@@ -43,7 +43,7 @@ class totara_message_workflow_plan extends totara_message_workflow_plugin_base {
         if (!$plan->set_status(DP_PLAN_STATUS_APPROVED, DP_PLAN_REASON_MANUAL_APPROVE, $reasonfordecision)) {
             return false;
         }
-
+        \totara_plan\event\approval_approved::create_from_plan($plan)->trigger();
         return $plan->send_approved_alert($reasonfordecision);
     }
 
@@ -73,7 +73,7 @@ class totara_message_workflow_plan extends totara_message_workflow_plugin_base {
         if (!in_array($plan->get_setting('approve'), array(DP_PERMISSION_ALLOW, DP_PERMISSION_APPROVE))) {
             return false;
         }
-
+        \totara_plan\event\approval_declined::create_from_plan($plan)->trigger();
         return $plan->send_declined_alert($reasonfordecision);
     }
 }

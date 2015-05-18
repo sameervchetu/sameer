@@ -1,26 +1,27 @@
-.block_totara_alerts ul {
+.block_totara_alerts .content ul {
     list-style-type: none;
     margin: 0;
 }
 
-.block_totara_alerts li {
+.block_totara_alerts .content li {
     padding: 5px;
+    position: relative;
+    min-height: 30px;
+    clear: both;
 }
 
-.block_totara_alerts li .information {
+.block_totara_alerts .content li .information {
     float: right;
-    margin-top: 5px;
 }
 
-.block_totara_alerts li :first-child {
+.block_totara_alerts .content li :first-child {
     margin-right: 3px;
+    float: left;
 }
-.block_totara_alerts li a {
+
+.block_totara_alerts .content li span,
+.block_totara_alerts .content li > a {
     vertical-align: top;
-}
-.block_totara_alerts li span {
-    display: inline-block;
-    vertical-align: top;
-    padding-top: 10px;
+    padding-top: 5px;
     padding-left: 3px;
 }

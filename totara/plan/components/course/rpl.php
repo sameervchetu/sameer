@@ -107,8 +107,8 @@ if ($fromform = $mform->get_data()) {
         $alert_detail->itemname = $DB->get_field('course', 'fullname', array('id' => $completion->course));
         $alert_detail->text = get_string('completedviarpl', 'totara_plan', $completion->rpl);
         $component->send_component_complete_alert($alert_detail);
-
-        add_to_log(SITEID, 'plan', 'completed course', "component.php?id={$plan->id}&amp;c=course", "{$alert_detail->itemname} RPL set (ID:{$completion->course})");
+        \totara_plan\event\plan_completed::create_from_component(
+            $plan, 'course', $completion->course, $alert_detail->itemname)->trigger();
 
         // If no RPL, uncomplete user, and let aggregation do its thing
     } else {

@@ -48,6 +48,19 @@ class behat_auth extends behat_base {
      */
     public function i_log_in_as($username) {
 
+        // This is a Totara hack (T-14008) to deal with forcelogin.
+        global $CFG;
+        if ($CFG->forcelogin) {
+            $this->getSession()->visit($this->locate_path('/login/index.php'));
+            $steps = array(
+                new Given('I set the field "' . get_string('username') . '" to "' . $this->escape($username) . '"'),
+                new Given('I set the field "' . get_string('password') . '" to "'. $this->escape($username) . '"'),
+                new Given('I press "' . get_string('login') . '"')
+            );
+            return $steps;
+        }
+        // End of Totara hack.
+
         // Running this step using the API rather than a chained step because
         // we need to see if the 'Log in' link is available or we need to click
         // the dropdown to expand the navigation bar before.

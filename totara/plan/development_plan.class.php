@@ -709,6 +709,23 @@ class development_plan {
         return false;
     }
 
+    /**
+     * Get stdClass with plan properties
+     *
+     * @return stdClass
+     */
+    public function get() {
+        $obj = new stdClass();
+        $obj->id = $this->id;
+        $obj->name = $this->name;
+        $obj->userid = $this->userid;
+        $obj->description = $this->description;
+        $obj->templateid = $this->templateid;
+        $obj->status = $this->status;
+        $obj->startdate = $this->startdate;
+        $obj->timecompleted = $this->timecompleted;
+        return $obj;
+    }
 
     /**
      * Returns all assigned items to components
@@ -1286,6 +1303,9 @@ class development_plan {
         }
         $DB->delete_records('dp_plan_evidence_relation', array('planid' => $this->id));
         $transaction->allow_commit();
+
+        \totara_plan\event\plan_deleted::create_from_plan($this)->trigger();
+
         return true;
     }
 
@@ -1355,9 +1375,8 @@ class development_plan {
         $todb->usermodified = $USER->id;
         $DB->insert_record('dp_plan_history', $todb);
         $transaction->allow_commit();
-        if ($status == DP_PLAN_STATUS_APPROVED) {
-            add_to_log(SITEID, 'plan', 'approved', "view.php?id={$this->id}", $this->name);
-        }
+
+        // NOT: do not trigger any events here, do it afterwards because we do not know the component here, sorry for the mess.
 
         return true;
     }
@@ -1390,6 +1409,8 @@ class development_plan {
             $data['planid'] = $this->id;
 
             $event = new tm_task_eventdata($manager, 'plan', $data, $data);
+            // Cast to a stdClass.
+            $event = (object)(array)$event;
             //ensure the message is actually coming from $learner, default to support
             $event->userfrom = ($USER->id == $learner->id) ? $learner : core_user::get_support_user();
             $event->contexturl = $this->get_display_url();
@@ -1413,6 +1434,7 @@ class development_plan {
 
             tm_workflow_send($event);
             $this->set_status(DP_PLAN_STATUS_PENDING, DP_PLAN_REASON_APPROVAL_REQUESTED);
+            \totara_plan\event\approval_requested::create_from_plan($this)->trigger();
 
             // Send alert to learner also
             $this->send_alert(true, 'learningplan-request', 'plan-request-learner-short', 'plan-request-learner-long');
@@ -1513,6 +1535,8 @@ class development_plan {
                 $roleid = $CFG->managerroleid;
             }
             $event = new tm_alert_eventdata($userto);
+            // Cast to a stdClass.
+            $event = (object)(array)$event;
             //ensure the message is actually coming from $userfrom, default to support
             $event->userfrom = ($USER->id == $userfrom->id) ? $userfrom : core_user::get_support_user();
             $event->contexturl = $this->get_display_url();

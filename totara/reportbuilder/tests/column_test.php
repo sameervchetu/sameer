@@ -553,6 +553,15 @@ class totara_reportbuilder_column_testcase extends reportcache_advanced_testcase
         'ip' => '127.0.0.1'
     );
 
+    protected $repository_opensesame_bdls_data = array('id' => 1, 'name' => 'Some budle', 'timecreated' => 1416859984);
+
+    protected $repository_opensesame_pkgs_data = array('id' => 1, 'zipfilename' => 'abc.zip', 'title' => 'abc',
+        'expirationdate' => '',  'mobilecompatibility' => '', 'externalid' => 'xyz', 'description' => 'efg', 'duration' => '',
+        'timecreated' => 1416859984, 'timemodified' => 1416859984);
+
+    protected $repository_opensesame_bps_data = array('id' => 1, 'bundleid' => 1, 'packageid' => 1);
+
+
     protected function setUp() {
         global $DB;
         parent::setup();
@@ -664,6 +673,9 @@ class totara_reportbuilder_column_testcase extends reportcache_advanced_testcase
             'context' => $this->context_data,
             'upgrade_log' => array($this->upgrade_log),
             'logstore_standard_log' => array($this->logstore_standard_log_data),
+            'repository_opensesame_bdls' => array($this->repository_opensesame_bdls_data),
+            'repository_opensesame_pkgs' => array($this->repository_opensesame_pkgs_data),
+            'repository_opensesame_bps' => array($this->repository_opensesame_bps_data),
         )));
     }
 

@@ -65,13 +65,7 @@ if ($badge->type == BADGE_TYPE_COURSE) {
     navigation_node::override_active_url($navurl, true);
 }
 
-$urlparams = array(
-        'badgeid' => $badge->id,
-        'edit' => $edit,
-        'type' => $type,
-        'crit' => $crit
-    );
-
+$urlparams = array('badgeid' => $badgeid, 'edit' => $edit, 'type' => $type, 'crit' => $crit);
 $PAGE->set_context($context);
 $PAGE->set_url(new moodle_url('/badges/criteria_settings.php', $urlparams));
 $PAGE->set_pagelayout('standard');
@@ -108,7 +102,7 @@ if (!empty($addcourse)) {
         $criteria_overall = award_criteria::build(array('criteriatype' => BADGE_CRITERIA_TYPE_OVERALL, 'badgeid' => $badge->id));
         $criteria_overall->save(array('agg' => BADGE_CRITERIA_AGGREGATION_ALL));
     }
-    $criteria->save($data);
+    $criteria->save((array)$data);
     $return->param('msg', $msg);
     redirect($return);
 }

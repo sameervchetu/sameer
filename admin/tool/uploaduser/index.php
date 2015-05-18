@@ -60,6 +60,7 @@ $struseradded               = get_string('newuser');
 $strusernotadded            = get_string('usernotaddedregistered', 'error');
 $strusernotaddederror       = get_string('usernotaddederror', 'error');
 
+$struseralreadydeleted      = get_string('useralreadydeleted', 'tool_uploaduser');
 $struserdeleted             = get_string('userdeleted', 'tool_uploaduser');
 $strusernotdeletederror     = get_string('usernotdeletederror', 'error');
 $strusernotdeletedmissing   = get_string('usernotdeletedmissing', 'error');
@@ -421,12 +422,17 @@ if ($formdata = $mform2->is_cancelled()) {
                     $deleteerrors++;
                     continue;
                 }
-                if (delete_user($existinguser)) {
+                if ($existinguser->deleted == 0 && delete_user($existinguser)) {
                     $upt->track('status', $struserdeleted);
                     $deletes++;
+                    continue;
+                } else if ($existinguser->deleted == 1) {
+                    $upt->track('status', $struseralreadydeleted, 'error');
+                    continue;
                 } else {
                     $upt->track('status', $strusernotdeletederror, 'error');
                     $deleteerrors++;
+                    continue;
                 }
             } else {
                 $upt->track('status', $strusernotdeletedmissing, 'error');

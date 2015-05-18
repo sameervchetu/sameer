@@ -272,6 +272,9 @@ function load_environment_xml($env_select=ENV_SELECT_NEWER) {
 
     if (is_numeric($env_select)) {
         $file = $CFG->dataroot.'/environment/environment.xml';
+
+        $file = false; // Totara environment file cannot be updated from Moodle!!!
+
         $internalfile = $CFG->dirroot.'/'.$CFG->admin.'/environment.xml';
         switch ($env_select) {
             case ENV_SELECT_NEWER:

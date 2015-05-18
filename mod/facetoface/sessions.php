@@ -206,7 +206,7 @@ if ($fromform = $mform->get_data()) { // Form submitted
     $todb->normalcost = $fromform->normalcost;
     $todb->discountcost = $fromform->discountcost;
     $todb->usermodified = $USER->id;
-    $todb->roomid = 0;
+    $todb->roomid = (isset($session->roomid)) ? $session->roomid : 0;
     $todb->selfapproval = $facetoface->approvalreqd ? $fromform->selfapproval : 0;
     $todb->availablesignupnote = $fromform->availablesignupnote;
 
@@ -258,8 +258,11 @@ if ($fromform = $mform->get_data()) { // Form submitted
         // Now that we have updated the session record fetch the rest of the data we need.
         facetoface_update_attendees($session);
 
-        // Send any necessary datetime change notifications.
-        if (facetoface_session_dates_check($olddates, $sessiondates)) {
+        // Get datetimeknown value from form.
+        $datetimeknown = $fromform->datetimeknown == 1;
+
+        // Send any necessary datetime change notifications but only if date/time is known.
+        if ($datetimeknown && facetoface_session_dates_check($olddates, $sessiondates)) {
             $attendees = facetoface_get_attendees($session->id);
             foreach ($attendees as $user) {
                 facetoface_send_datetime_change_notice($facetoface, $session, $user->id);

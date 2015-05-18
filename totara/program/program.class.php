@@ -34,6 +34,7 @@ require_once($CFG->dirroot . '/totara/program/program_message.class.php');
 require_once($CFG->dirroot . '/totara/program/program_exceptions.class.php');
 require_once($CFG->dirroot . '/totara/program/program_exception.class.php');
 require_once($CFG->dirroot . '/totara/program/program_user_assignment.class.php');
+require_once($CFG->dirroot . '/totara/program/lib.php');
 
 define('STATUS_PROGRAM_INCOMPLETE', 0);
 define('STATUS_PROGRAM_COMPLETE', 1);
@@ -45,7 +46,8 @@ define('TIME_SELECTOR_DAYS', 2);
 define('TIME_SELECTOR_WEEKS', 3);
 define('TIME_SELECTOR_MONTHS', 4);
 define('TIME_SELECTOR_YEARS', 5);
-define('TIME_SELECTOR_INFINITY', 6); // To infinity and beyond!!
+define('TIME_SELECTOR_INFINITY', 6); // Deprecated.
+define('TIME_SELECTOR_NOMINIMUM', 6);
 
 define('DURATION_MINUTE', 60);
 define('DURATION_HOUR',   60 * DURATION_MINUTE);
@@ -73,7 +75,7 @@ $TIMEALLOWANCESTRINGS = array(
     TIME_SELECTOR_WEEKS => 'weeks',
     TIME_SELECTOR_MONTHS => 'months',
     TIME_SELECTOR_YEARS => 'years',
-    TIME_SELECTOR_INFINITY => 'infinity',
+    TIME_SELECTOR_NOMINIMUM => 'nominimumtime',
 );
 
 
@@ -143,6 +145,62 @@ class program {
         if (!$this->studentroleid) {
             print_error('error:failedtofindstudentrole', 'totara_program');
         }
+    }
+
+    /**
+     * Create a new program.
+     *
+     * @since totara-2.7.2
+     * @param mixed $data stdClass or array of program settings.
+     * @return program
+     */
+    public static function create($data) {
+        global $DB, $USER;
+
+        // Convert stdClass object to array.
+        if (is_object($data)) {
+            $data = (array)$data;
+        }
+
+        if (isset($data['available'])) {
+            throw new coding_exception("Property 'available' is automatically calculated based on the given from and until dates " .
+                "and should not be manually specified");
+        }
+
+        // Set up the defaults.
+        $now = time();
+        $sortorder = $DB->get_field('prog', 'MAX(sortorder) + 1', array());
+        $sortorder = !empty($sortorder) ? $sortorder : 0;
+
+        $defaults = array(
+            'timecreated' => $now,
+            'timemodified' => $now,
+            'usermodified' => $USER->id,
+            'sortorder' => $sortorder,
+            'exceptionssent' => 0,
+            'summary' => '',
+            'endnote' => '',
+            'availablefrom' => 0,
+            'availableuntil' => 0,
+        );
+
+        // Merge the defaults and given data. The given data overrides the defaults.
+        $todb = (object)array_merge($defaults, (array)$data);
+
+        // Set up some properties that depend on the data.
+        $todb->available = prog_check_availability($todb->availablefrom, $todb->availableuntil);
+
+        // Create the program. Done inside a transaction so that failure will undo it.
+        $transaction = $DB->start_delegated_transaction();
+        $programid = $DB->insert_record('prog', $todb);
+        $program = new program($programid);
+        $transaction->allow_commit();
+
+        // Create message manager to add default messages.
+        new prog_messages_manager($programid, true);
+
+        // Return the program that was just created.
+        return $program;
     }
 
     public function get_content() {
@@ -278,7 +336,7 @@ class program {
 
         foreach ($rawuserassignments as $rawassign) {
             $alluserassignments[$rawassign->assignmentid][$rawassign->userid] = array('uaid' => $rawassign->id,
-                                                                                      'exception' => $rawassign->exceptionstatus,
+                                                                                      'exceptionstatus' => $rawassign->exceptionstatus,
                                                                                       'timeassigned' => $rawassign->timeassigned);
         }
 
@@ -359,7 +417,11 @@ class program {
 
                         // Skip resolved and dismissed exceptions to allow users to override group duedates.
                         $skipstatus = array(PROGRAM_EXCEPTION_RESOLVED, PROGRAM_EXCEPTION_DISMISSED);
-                        if (isset($user_assign_data['exceptionstatus']) && in_array($user_assign_data['exceptionstatus'], $skipstatus)) {
+                        if (!isset($user_assign_data['exceptionstatus'])) {
+                            throw new coding_exception('The property "exceptionstatus" is missing.');
+                        }
+
+                        if (in_array($user_assign_data['exceptionstatus'], $skipstatus)) {
                             continue;
                         }
 
@@ -1262,7 +1324,7 @@ class program {
                 }
                 $duedatestr .= $request;
 
-                $out .= html_writer::start_tag('div', array('class' => 'programprogress'));
+                $out .= html_writer::start_tag('div', array('id' => 'progressbar', 'class' => 'programprogress'));
                 $out .= html_writer::tag('div', get_string('startdate', 'totara_program') . ': '
                                 . $startdatestr, array('class' => 'item'));
                 $out .= html_writer::tag('div', get_string('duedate', 'totara_program').': '
@@ -1803,7 +1865,7 @@ class program_utilities {
 
         if ($duration == 0) {
             $ob->num = 0;
-            $ob->period = TIME_SELECTOR_INFINITY;
+            $ob->period = TIME_SELECTOR_NOMINIMUM;
         } else if ($duration % DURATION_YEAR == 0) {
             $ob->num = $duration / DURATION_YEAR;
             $ob->period = TIME_SELECTOR_YEARS;
@@ -1877,15 +1939,15 @@ class program_utilities {
         return $out;
     }
 
-    public static function get_standard_time_allowance_options($infinity=false) {
+    public static function get_standard_time_allowance_options($includenominimum=false) {
         $timeallowances = array(
             TIME_SELECTOR_DAYS => get_string('days', 'totara_program'),
             TIME_SELECTOR_WEEKS => get_string('weeks', 'totara_program'),
             TIME_SELECTOR_MONTHS => get_string('months', 'totara_program'),
             TIME_SELECTOR_YEARS => get_string('years', 'totara_program')
         );
-        if ($infinity) {
-            $timeallowances[TIME_SELECTOR_INFINITY] = get_string('infinity', 'totara_program');
+        if ($includenominimum) {
+            $timeallowances[TIME_SELECTOR_NOMINIMUM] = get_string('nominimumtime', 'totara_program');
         }
         return $timeallowances;
     }

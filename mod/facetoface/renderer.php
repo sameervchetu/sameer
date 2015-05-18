@@ -210,6 +210,14 @@ class mod_facetoface_renderer extends plugin_renderer_base {
                     $options .= html_writer::link($reserveurl, get_string('reserveother', 'mod_facetoface'));
                     $options .= html_writer::empty_tag('br');
                 }
+
+                if (has_capability('mod/facetoface:managereservations', $this->context)) {
+                    $managereserveurl = new moodle_url('/mod/facetoface/managereservations.php',
+                        array('action'=> 'manage', 's' => $session->id));
+
+                    $options .= html_writer::link($managereserveurl, get_string('managereservations', 'mod_facetoface'));
+                    $options .= html_writer::empty_tag('br');
+                }
             }
 
             if ($isbookedsession) {
@@ -538,5 +546,47 @@ class mod_facetoface_renderer extends plugin_renderer_base {
 
         return print_tabs($tabs, $currenttab, $inactive, $activated, true);
     }
+
+    /**
+     * Show a list of all reservations for a session and allow them to be removed.
+     *
+     * @param object $reservations Data about all the reservations
+     */
+    public function print_reservation_management_table($reservations) {
+
+        $out = '';
+
+        if (count($reservations) > 0) {
+            $table = new html_table();
+            $table->head = array(
+                get_string('managername', 'mod_facetoface'),
+                get_string('spacesreserved', 'mod_facetoface'),
+                get_string('actions'));
+
+            $table->attributes = array('class' => 'generaltable managereservations fullwidth');
+
+            $strdelete = get_string('delete');
+
+            foreach ($reservations as $reservation) {
+                $managername = fullname($reservation);
+
+                $managerlink = html_writer::link(new moodle_url('/user/profile.php',
+                    array('id' => $reservation->bookedby)), $managername);
+
+                $deleteurl = new moodle_url('/mod/facetoface/managereservations.php', array('s' => $reservation->sessionid,
+                    'action' => 'delete', 'managerid' => $reservation->bookedby, 'sesskey' => sesskey()));
+                $buttons = $this->action_icon($deleteurl, new pix_icon('t/delete', $strdelete));
+
+                $row = new html_table_row(array($managerlink, $reservation->reservedspaces, $buttons));
+                $table->data[] = $row;
+            }
+
+            $out .= html_writer::table($table);
+
+        } else {
+            $out .= html_writer::tag('p', get_string('noreservationsforsession', 'mod_facetoface'));
+        }
+
+        return $out;
+    }
 }
-?>

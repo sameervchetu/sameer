@@ -255,7 +255,8 @@ class dp_program_component extends dp_base_component {
 
             // Unassign item
             if ($this->unassign_item($deleteitem)) {
-                add_to_log(SITEID, 'plan', 'removed program', "component.php?id={$this->plan->id}&amp;c=program", "{$deleteitem->fullname} (ID:{$deleteitem->id})");
+                \totara_plan\event\component_deleted::create_from_component(
+                    $this->plan, 'program', $deleteitem->id, $deleteitem->fullname)->trigger();
                 totara_set_notification(get_string('canremoveitem', 'totara_plan'), $currenturl, array('class' => 'notifysuccess'));
             } else {
                 print_error('error:couldnotunassignitem', 'totara_plan');
@@ -428,6 +429,7 @@ class dp_program_component extends dp_base_component {
                         get_string('changedfromxtoy', 'totara_plan', (object)array('before' => dp_get_approval_status_from_code($oldrecords[$itemid]->approved),
                                     'after' => dp_get_approval_status_from_code($record->approved))).html_writer::empty_tag('br');
                     $approval->text = $text;
+                    $approval->itemid = $program->id;
                     $approval->itemname = $program->fullname;
                     $approval->before = $oldrecords[$itemid]->approved;
                     $approval->after = $record->approved;
@@ -442,8 +444,13 @@ class dp_program_component extends dp_base_component {
                 foreach ($approvals as $approval) {
                     $this->send_component_approval_alert($approval);
 
-                    $action = ($approval->after == DP_APPROVAL_APPROVED) ? 'approved' : 'declined';
-                    add_to_log(SITEID, 'plan', "{$action} program", "component.php?id={$this->plan->id}&amp;c=program", $approval->itemname);
+                    if ($approval->after == DP_APPROVAL_APPROVED) {
+                        \totara_plan\event\approval_approved::create_from_component(
+                            $this->plan, 'program', $approval->itemid, $approval->itemname)->trigger();
+                    } else {
+                        \totara_plan\event\approval_declined::create_from_component(
+                            $this->plan, 'program', $approval->itemid, $approval->itemname)->trigger();
+                    }
                 }
             }
 
@@ -575,9 +582,9 @@ class dp_program_component extends dp_base_component {
         // Load fullname of item
         $item->fullname = $DB->get_field('prog', 'fullname', array('id' => $itemid));
 
-        $result = $DB->insert_record('dp_plan_program_assign', $item);
-        add_to_log(SITEID, 'plan', 'added program', "component.php?id={$this->plan->id}&amp;c=program", "Program ID: {$itemid}");
-        $item->id = $result;
+        $item->id = $DB->insert_record('dp_plan_program_assign', $item);
+
+        \totara_plan\event\component_created::create_from_component($this->plan, 'program', $itemid, $item->fullname)->trigger();
 
         // create a completion record for this program for this plan's user to
         // record when the program was started and when it is due
@@ -590,7 +597,7 @@ class dp_program_component extends dp_base_component {
 
         $program->update_program_complete($this->plan->userid, $completionsettings);
 
-        return $result ? $item : $result;
+        return $item;
     }
 
     /**

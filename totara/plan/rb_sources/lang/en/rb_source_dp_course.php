@@ -33,6 +33,7 @@ $string['planstatus'] = 'Plan status';
 $string['plantemplate'] = 'Plan template';
 $string['coursecompletedate'] = 'Course completion date';
 $string['courseduedate'] = 'Course due date';
+$string['courseenroldate'] = 'Course Enrol Date';
 $string['coursepriority'] = 'Course priority';
 $string['coursestatus'] = 'Course status';
 $string['templatename'] = 'Plan template name';

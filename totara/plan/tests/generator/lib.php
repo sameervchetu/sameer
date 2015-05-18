@@ -18,7 +18,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  *
  * @author Rob Tyler <rob.tyler@totaralms.com>
- * @package totara_learning_plan
+ * @package totara_plan
  * @subpackage tests_generator
  */
 

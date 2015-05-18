@@ -59,7 +59,9 @@ if ($result !== true) {
 }
 
 // Log it
-add_to_log(SITEID, 'plan', 'competency proficiency updated', "update-competency-setting.php?competencyid={$competencyid}&prof={$prof}&planid={$planid}", 'ajax');
+$competencyname = $DB->get_field('comp', 'fullname', array('id' => $competencyid));
+\totara_plan\event\component_updated::create_from_component(
+    $plan, 'competencyproficiency', $competencyid, $competencyname)->trigger();
 
 // Update the competency evidence
 $details = new stdClass();

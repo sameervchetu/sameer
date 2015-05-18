@@ -2,7 +2,8 @@
 Feature: The generators create the expected frameworks
 
   Scenario: A position framework can be generated
-    Given the following "position" frameworks exist:
+    Given I am on a totara site
+    And the following "position" frameworks exist:
       | fullname                  | idnumber | description           |
       | Test position framework   | FW001    | Framework description |
     When I log in as "admin"

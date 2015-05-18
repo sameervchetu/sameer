@@ -36,7 +36,7 @@ require_capability('tool/totara_sync:manage', $systemcontext);
 require_sesskey();
 
 $dbtype = required_param('dbtype', PARAM_ALPHANUMEXT);
-$dbhost = optional_param('dbhost', '', PARAM_ALPHANUMEXT);
+$dbhost = optional_param('dbhost', '', PARAM_HOST);
 $dbname = required_param('dbname', PARAM_ALPHANUMEXT);
 $dbuser = required_param('dbuser', PARAM_ALPHANUMEXT);
 // Passwords contain strange characters we dont clean it

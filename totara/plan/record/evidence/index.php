@@ -33,6 +33,7 @@ $userid = optional_param('userid', $USER->id, PARAM_INT); // Which user to show,
 $sid = optional_param('sid', '0', PARAM_INT);
 $format = optional_param('format', '', PARAM_TEXT); // Export format.
 $rolstatus = optional_param('status', 'all', PARAM_ALPHA);
+$debug  = optional_param('debug', 0, PARAM_INT);
 
 if (!in_array($rolstatus, array('active','completed','all'))) {
     $rolstatus = 'all';
@@ -66,6 +67,10 @@ if ($rolstatus != 'all') {
     $reportfilters['rolstatus'] = $rolstatus;
 }
 $report = reportbuilder_get_embedded_report('plan_evidence', $reportfilters, false, $sid);
+
+if ($debug) {
+    $report->debug($debug);
+}
 
 $logurl = $PAGE->url->out_as_local_url();
 if ($format != '') {

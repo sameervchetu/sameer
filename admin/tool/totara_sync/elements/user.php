@@ -621,6 +621,11 @@ class totara_sync_element_user extends totara_sync_element {
         $badids = $this->check_values_in_db($synctable, 'username', 'duplicateusernamexdb');
         $invalidids = array_merge($invalidids, $badids);
 
+        if (empty($this->config->allow_create)) {
+            $badids = $this->check_users_unable_to_revive($synctable);
+            $invalidids = array_merge($invalidids, $badids);
+        }
+
         if (!isset($this->config->allowduplicatedemails)) {
             $this->config->allowduplicatedemails = 0;
         }
@@ -990,6 +995,35 @@ class totara_sync_element_user extends totara_sync_element {
         $rs = $DB->get_recordset_sql($sql, $params);
         foreach ($rs as $r) {
             $this->addlog(get_string($identifier, 'tool_totara_sync', $r), 'error', 'checksanity');
+            $invalidids[] = $r->id;
+        }
+        $rs->close();
+
+        return $invalidids;
+    }
+
+    /**
+     * Check for users that will be revived where allowcreate is off
+     *
+     * @param string $synctable sync table name
+     *
+     * @return array with invalid ids from synctable for users who are marked not deleted in the file but deleted in the db
+     */
+    function check_users_unable_to_revive($synctable) {
+        global $DB;
+
+        $invalidids = array();
+        $sql = "SELECT s.id, s.idnumber
+                  FROM {{$synctable}} s
+                  INNER JOIN {user} u ON s.idnumber = u.idnumber
+                 WHERE u.deleted = 1";
+        if (empty($this->config->sourceallrecords)) {
+            // With sourceallrecords on we also need to check the deleted column in the sync table.
+            $sql .= ' AND s.deleted = 0';
+        }
+        $rs = $DB->get_recordset_sql($sql);
+        foreach ($rs as $r) {
+            $this->addlog(get_string('cannotupdatedeleteduserx', 'tool_totara_sync', $r->idnumber), 'error', 'checksanity');
             $invalidids[] = $r->id;
         }
         $rs->close();

@@ -113,6 +113,7 @@ class rb_source_org extends rb_base_source {
                 get_string('name', 'rb_source_org'),
                 "base.fullname",
                 array('displayfunc' => 'orgnamelink',
+                      'extrafields' => array('orgid' => 'base.id'),
                       'dbdatatype' => 'char',
                       'outputformat' => 'text')
             ),
@@ -129,8 +130,14 @@ class rb_source_org extends rb_base_source {
                 'description',
                 get_string('description', 'rb_source_org'),
                 "base.description",
-                array('dbdatatype' => 'text',
-                      'outputformat' => 'text')
+                array('displayfunc' => 'tinymce_textarea',
+                    'extrafields' => array(
+                        'filearea' => '\'org\'',
+                        'component' => '\'totara_hierarchy\'',
+                        'fileid' => 'base.id'
+                    ),
+                    'dbdatatype' => 'text',
+                    'outputformat' => 'text')
             ),
             new rb_column_option(
                 'org',
@@ -154,12 +161,31 @@ class rb_source_org extends rb_base_source {
             ),
             new rb_column_option(
                 'org',
+                'orgtypeidnumber',
+                get_string('typeidnumber', 'rb_source_org'),
+                'orgtype.idnumber',
+                array('joins' => 'orgtype',
+                    'dbdatatype' => 'char',
+                    'outputformat' => 'text'
+                )
+            ),
+            new rb_column_option(
+                'org',
                 'framework',
                 get_string('framework', 'rb_source_org'),
                 "framework.fullname",
                 array('joins' => 'framework',
                       'dbdatatype' => 'char',
                       'outputformat' => 'text')
+            ),
+            new rb_column_option(
+                'org',
+                'frameworkidnumber',
+                get_string('frameworkidnumber', 'rb_source_org'),
+                "framework.idnumber",
+                array('joins' => 'framework',
+                    'dbdatatype' => 'char',
+                    'outputformat' => 'text')
             ),
             new rb_column_option(
                 'org',
@@ -372,9 +398,9 @@ class rb_source_org extends rb_base_source {
     //
     //
     function rb_display_orgnamelink($orgname, $row) {
-        global $CFG;
+        $url = new moodle_url('/totara/hierarchy/item/view.php', array('prefix' => 'organisation', 'id' => $row->orgid));
 
-        return html_writer::link("{$CFG->wwwroot}/totara/hierarchy/item/view.php?prefix=organisation&id={$row->id}", $orgname);
+        return html_writer::link($url, $orgname);
     }
 
 

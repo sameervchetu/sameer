@@ -156,4 +156,64 @@ class totara_core_observer {
 
         return true;
     }
+
+    /**
+     * Triggered when 'course_completed' event is triggered.
+     *
+     * When a course is completed, check to see if the course is the criteria for completion of another course.
+     *
+     * @param \core\event\course_completed $event
+     * @return bool
+     */
+    public static function course_criteria_review(\core\event\course_completed $event) {
+        global $DB;
+
+        // Check if applicable course criteria exists.
+        $data = $event->get_data();
+        $eventdata = new stdClass();
+        $eventdata->criteriatype = COMPLETION_CRITERIA_TYPE_COURSE;
+        $eventdata->courseinstance = $data['courseid'];
+        $eventdata->userid = $data['userid'];
+        $eventdata->timecompleted = time();
+
+        $criteria = completion_criteria::factory((array)$eventdata);
+        $params = array_intersect_key((array)$eventdata, array_flip($criteria->required_fields));
+
+        $criteria = $DB->get_records('course_completion_criteria', $params);
+        if (!$criteria) {
+            return true;
+        }
+
+        // Loop through, and see if the criteria apply to this user.
+        foreach ($criteria as $criterion) {
+            $course = new stdClass();
+            $course->id = $criterion->course;
+            $cinfo = new completion_info($course);
+
+            if (!$cinfo->is_tracked_user($eventdata->userid)) {
+                continue;
+            }
+
+            // Load criterion.
+            $criterion = completion_criteria::factory((array) $criterion);
+
+            // Load completion record.
+            $data = array(
+                'criteriaid'    => $criterion->id,
+                'userid'        => $eventdata->userid,
+                'course'        => $criterion->course
+            );
+            // Add the timecompleted for aggregated course completion.
+            if (isset($eventdata->timecompleted)) {
+                $data['timecompleted'] = $eventdata->timecompleted;
+            }
+
+            $completion = new completion_criteria_completion($data);
+
+            // Review and mark complete if necessary.
+            $criterion->review($completion);
+        }
+
+        return true;
+    }
 }

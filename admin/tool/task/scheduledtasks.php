@@ -104,6 +104,13 @@ if ($mform && ($mform->is_cancelled() || !empty($CFG->preventscheduledtaskchange
 
 } else {
     echo $OUTPUT->header();
+
+    // Check if the cron has run recently, if not notify the admin about configuration recommendations.
+    $lastrun = $DB->get_field_sql('SELECT MAX(lastruntime) FROM {task_scheduled}');
+    if ($lastrun < time() - (MINSECS * 5)) {
+        echo $OUTPUT->notification(get_string('cronscheduleregularity', 'totara_core'), 'notifynotice');
+    }
+
     $error = optional_param('error', '', PARAM_NOTAGS);
     if ($error) {
         echo $OUTPUT->notification($error, 'notifyerror');

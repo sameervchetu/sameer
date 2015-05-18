@@ -62,6 +62,7 @@ $string['uploadusersresult'] = 'Upload users results';
 $string['uploaduser:uploaduserpictures'] = 'Upload user pictures';
 $string['useraccountupdated'] = 'User updated';
 $string['useraccountuptodate'] = 'User up-to-date';
+$string['useralreadydeleted'] = 'User already deleted';
 $string['userdeleted'] = 'User deleted';
 $string['userrenamed'] = 'User renamed';
 $string['userscreated'] = 'Users created';

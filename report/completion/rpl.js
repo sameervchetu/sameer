@@ -304,7 +304,7 @@ M.totara_completionrpl = M.totara_completionrpl || {
             // Callback for saving RPL.
             var callback = {
                     method: 'GET',
-                    data: 'type='+type+'&course='+courseid+'&user='+user+'&rpl='+rpl+'&cmid='+cmid,
+                    data: {"type": type, "course": courseid, "user": user, "rpl": rpl, "cmid": cmid, "sesskey": M.cfg.sesskey},
                     arguments: { success : user },
                     on: {
                         success: function(id, o, args) {
@@ -315,7 +315,7 @@ M.totara_completionrpl = M.totara_completionrpl || {
                         failure: function(o) { }
                     }
                 };
-            Y.use('io-base', function(Y) {
+            Y.use('io-base', 'querystring-stringify-simple', function(Y) {
                 var uri = wwwroot+'/report/completion/save_rpl.php';
                 Y.io(uri, callback);
             });

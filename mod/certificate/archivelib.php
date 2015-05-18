@@ -34,7 +34,7 @@ defined('MOODLE_INTERNAL') || die();
  * @param int $courseid
  * @return bool always true
  */
-function certificate_archive_completion($userid, $courseid) {
+function certificate_archive_completion($userid, $courseid, $windowopens = NULL) {
     global $DB, $CFG;
     require_once($CFG->dirroot . '/lib/completionlib.php');
     require_once($CFG->dirroot . '/mod/certificate/locallib.php');

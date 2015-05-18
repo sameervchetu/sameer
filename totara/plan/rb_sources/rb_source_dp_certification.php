@@ -246,32 +246,20 @@ class rb_source_dp_certification extends rb_base_source {
                 )
         );
 
-        // The date to use for sorting when there is no due date. Sufficiently far in the future.
-        $neverduedate = 100000000000;
-
         $columnoptions[] = new rb_column_option(
                 'certif_completion',
                 'timedue',
                 get_string('certificationduedate', 'totara_program'),
-                'CASE WHEN certif_completion.timeexpires > 0
-                           THEN certif_completion.timeexpires
-                      WHEN prog_completion.timedue IS NULL OR prog_completion.timedue = 0
-                           OR prog_completion.timedue = ' . COMPLETION_TIME_NOT_SET . '
-                           THEN ' . $neverduedate . '
-                      WHEN prog_completion.timedue > ' . time() . ' AND certif_completion.certifpath = ' . CERTIFPATH_CERT . '
-                           THEN prog_completion.timedue
-                      ELSE 0 END',
+                'prog_completion.timedue',
                 array(
                     'joins' => array('prog_completion', 'certif_completion'),
                     'dbdatatype' => 'timestamp',
-                    'displayfunc' => 'certification_duedate',
+                    'displayfunc' => 'program_duedate',
                     'extrafields' => array(
-                        'timedue' => 'prog_completion.timedue',
                         'status' => 'certif_completion.status',
                         'programid' => 'base.id',
                         'certifpath' => 'certif_completion.certifpath',
                         'certifstatus' => 'certif_completion.status',
-                        'timeexpires' => 'certif_completion.timeexpires',
                         'userid' => 'prog_completion.userid',
                     )
                 )

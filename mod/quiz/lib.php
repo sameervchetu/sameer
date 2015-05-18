@@ -1827,7 +1827,7 @@ function quiz_get_navigation_options() {
  * @param int $userid
  * @param int $courseid
  */
-function quiz_archive_completion($userid, $courseid) {
+function quiz_archive_completion($userid, $courseid, $windowopens = NULL) {
     global $DB, $CFG;
 
     $sql = 'SELECT q.*

@@ -129,7 +129,6 @@ class mod_facetoface_session_form extends moodleform {
 
         $mform->addElement('checkbox', 'customroom', '', get_string('otherroom', 'facetoface'));
         $mform->setType('customroom', PARAM_INT);
-        $mform->disabledIf('customroom', 'datetimeknown', 'eq', 0);
 
         $mform->addElement('html', '<div class="fitem"><div class="fitemtitle"></div><table><tr><td>');
         $mform->addElement('static', '', '', get_string('roomname', 'facetoface'));

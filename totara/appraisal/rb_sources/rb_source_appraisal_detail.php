@@ -391,10 +391,14 @@ class rb_source_appraisal_detail extends rb_source_appraisal {
         $minimum = 0;
         foreach ($questionrecords as $questionrecord) {
             $question = new appraisal_question($questionrecord->id);
+
+            $element = $question->get_element();
+            $fieldsuffix = ($element instanceof question_ratingcustom) ? 'score' : '';
+
             if ($field != '') {
                 $field .= ' + ';
             }
-            $field .= 'COALESCE(' . $DB->sql_cast_char2int( $columnoption->field . $question->id . 'score') . ',0)';
+            $field .= 'COALESCE(' . $DB->sql_cast_char2int( $columnoption->field . $question->id . $fieldsuffix) . ',0)';
             $maximum += $question->get_element()->get_max();
             $minimum += $question->get_element()->get_min();
         }

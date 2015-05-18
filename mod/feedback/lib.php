@@ -3266,7 +3266,7 @@ function feedback_ajax_saveitemorder($itemlist, $feedback) {
  * @param int $userid
  * @param int $courseid
  */
-function feedback_archive_completion($userid, $courseid) {
+function feedback_archive_completion($userid, $courseid, $windowopens = NULL) {
     global $DB, $CFG;
 
     require_once($CFG->libdir.'/gradelib.php');

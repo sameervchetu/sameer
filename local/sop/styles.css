@@ -1,0 +1,17 @@
+/*
+To change this license header, choose License Headers in Project Properties.
+To change this template file, choose Tools | Templates
+and open the template in the editor.
+*/
+/* 
+    Created on : May 18, 2015, 5:42:39 PM
+    Author     : sameerv
+*/
+
+.sop_text_completed {
+    color: red;
+    text-align: center;
+}
+.sop_view_record {
+    text-align: center;
+}

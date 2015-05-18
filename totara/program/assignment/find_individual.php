@@ -33,16 +33,24 @@ require_capability('totara/program:configureassignments', program_get_context($p
 
 // Already selected items
 $selected = optional_param('selected', array(), PARAM_SEQUENCE);
+$usernamefields = get_all_user_name_fields(true);
 if ($selected != false) {
     list($selectedsql, $selectedparams) = $DB->get_in_or_equal(explode(',', $selected));
-    $selected = $DB->get_records_select('user', "id {$selectedsql}", $selectedparams, '', 'id, ' . $DB->sql_fullname() . ' as fullname, email');
+    $selected = $DB->get_records_select('user', "id {$selectedsql}", $selectedparams, '', 'id, ' . $usernamefields . ', email');
+    foreach ($selected as $select) {
+        $select->fullname = fullname($select);
+    }
 }
 
 // Get all users
 $guest = guest_user();
 
 $items = $DB->get_records_select('user', 'deleted = 0 AND suspended = 0 AND id != ?', array($guest->id), '',
-    'id, ' . $DB->sql_fullname() . ' as fullname, email');
+    'id, ' . $usernamefields . ', email');
+
+foreach ($items as $item) {
+    $item->fullname = fullname($item);
+}
 
 // Don't let them remove the currently selected ones
 $unremovable = $selected;

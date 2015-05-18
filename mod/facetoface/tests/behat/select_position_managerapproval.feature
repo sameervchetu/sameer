@@ -5,7 +5,8 @@ Feature: Manager approval
   I need to authorise seminar signups
 
   Background:
-    Given the following "users" exist:
+    Given I am on a totara site
+    And the following "users" exist:
       | username | firstname | lastname | email               |
       | teacher1 | Terry1    | Teacher1 | teacher1@moodle.com |
       | teacher2 | Terry2    | Teacher2 | teacher2@moodle.com |

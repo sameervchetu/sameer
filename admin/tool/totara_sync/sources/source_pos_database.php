@@ -73,7 +73,7 @@ class totara_sync_source_pos_database extends totara_sync_source_pos {
         $mform->addRule('database_dbname', get_string('err_required', 'form'), 'required');
         $mform->setType('database_dbname', PARAM_ALPHANUMEXT);
         $mform->addElement('text', 'database_dbhost', get_string('dbhost', 'tool_totara_sync'));
-        $mform->setType('database_dbhost', PARAM_ALPHANUMEXT);
+        $mform->setType('database_dbhost', PARAM_HOST);
         $mform->addElement('text', 'database_dbuser', get_string('dbuser', 'tool_totara_sync'));
         $mform->addRule('database_dbuser', get_string('err_required', 'form'), 'required');
         $mform->setType('database_dbuser', PARAM_ALPHANUMEXT);

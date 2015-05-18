@@ -27,11 +27,11 @@
  */
 
 require_once(dirname(dirname(dirname(__FILE__))) . '/config.php');
-require_once 'HTML/QuickForm/Renderer/QuickHtml.php';
+require_once('HTML/QuickForm/Renderer/QuickHtml.php');
 require_once($CFG->libdir.'/adminlib.php');
-require_once('lib.php');
+require_once($CFG->dirroot . '/totara/program/lib.php');
+require_once($CFG->dirroot . '/totara/program/edit_content_form.php');
 require_once($CFG->dirroot . '/totara/core/js/lib/setup.php');
-require_once('edit_content_form.php');
 
 $id = required_param('id', PARAM_INT); // program id
 $submitdata = false;

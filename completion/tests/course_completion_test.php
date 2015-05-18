@@ -32,6 +32,7 @@ defined('MOODLE_INTERNAL') || die();
 global $CFG;
 
 require_once($CFG->dirroot . '/completion/cron.php');
+require_once($CFG->dirroot . '/mod/certificate/locallib.php');
 require_once($CFG->dirroot . '/totara/reportbuilder/tests/reportcache_advanced_testcase.php');
 require_once($CFG->dirroot . '/completion/criteria/completion_criteria_activity.php');
 
@@ -48,8 +49,11 @@ class core_completion_course_completion_testcase extends reportcache_advanced_te
      *  user3 will be enrolled to the course1 and course3 via manual.
      */
     protected function setUp() {
-        global $DB;
+        global $CFG, $DB;
         parent::setup();
+
+        $this->resetAfterTest();
+        $CFG->enablecompletion = true;
 
         $this->preventResetByRollback();
 
@@ -110,26 +114,22 @@ class core_completion_course_completion_testcase extends reportcache_advanced_te
 
         // Create a certification program.
         $data = array(
-            'fullname' => 'Certification Program1',
-            'certifid' => 1,
-            'shortname' => 'CP1',
+            'cert_learningcomptype' => CERTIFTYPE_PROGRAM,
+            'cert_activeperiod' => '3 day',
+            'cert_windowperiod' => '3 day',
+            'cert_recertifydatetype' => CERTIFRECERT_EXPIRY,
+            'cert_timemodified' => time(),
+            'prog_fullname' => 'Certification Program1',
+            'prog_shortname' => 'CP1',
         );
-        $this->program = $this->getDataGenerator()->create_program($data);
+        $this->assertEquals(0, $DB->count_records('certif'), "Certif table isn't empty");
+        $this->assertEquals(0, $DB->count_records('prog'), "Prog table isn't empty");
+        $this->program = $this->getDataGenerator()->create_certification($data);
+        $this->assertEquals(1, $DB->count_records('certif'),'Record count mismatch for certif');
         $this->assertEquals(1, $DB->count_records('prog'), "Record count mismatch for prog");
 
-        // Certification tab settings.
-        $this->assertEquals(0, $DB->count_records('certif'), "Certif table isn't empty");
-        $certification_todb = new stdClass;
-        $certification_todb->learningcomptype = CERTIFTYPE_PROGRAM;
-        $certification_todb->activeperiod = '3 day';
-        $certification_todb->windowperiod = '3 day';
-        $certification_todb->recertifydatetype = CERTIFRECERT_EXPIRY;
-        $certification_todb->timemodified = time();
-        $DB->insert_record('certif', $certification_todb);
-        $this->assertEquals(1, $DB->count_records('certif'),'Record count mismatch for certif');
-
         // Add course1 and course2 as part of the certification's content.
-        $this->getDataGenerator()->add_courseset_program($this->program->id, array($this->course1->id));
+        $this->getDataGenerator()->add_courseset_program($this->program->id, array($this->course1->id), CERTIFPATH_CERT);
         $this->getDataGenerator()->add_courseset_program($this->program->id, array($this->course2->id), CERTIFPATH_RECERT);
         $this->assertEquals(2, $DB->count_records('prog_courseset_course'), 'Record count mismatch for coursetsets in certification');
 

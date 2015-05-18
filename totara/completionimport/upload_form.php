@@ -81,13 +81,17 @@ class upload_form extends moodleform {
         $mform->addElement('select', 'csvdelimiter', get_string('csvdelimiter', 'totara_completionimport'), $delimiters);
         $mform->setType('csvdelimiter', PARAM_TEXT);
 
-        $encodings = textlib::get_encodings();
+        $encodings = core_text::get_encodings();
         $mform->addElement('select', 'csvencoding', get_string('csvencoding', 'totara_completionimport'), $encodings);
         $mform->setType('csvencoding', PARAM_TEXT);
         $mform->setDefault('csvencoding', 'UTF-8');
 
         $overrideactivestr = get_string('overrideactive' . $data->importname, 'totara_completionimport');
         $mform->addElement('advcheckbox', 'overrideactive' . $data->importname, $overrideactivestr);
+
+        $mform->addElement('advcheckbox', 'forcecaseinsensitive'.$data->importname, get_string('caseinsensitive'.$data->importname, 'totara_completionimport'));
+        $mform->addHelpButton('forcecaseinsensitive'.$data->importname, 'caseinsensitive'.$data->importname, 'totara_completionimport');
+        $mform->setAdvanced('forcecaseinsensitive'.$data->importname);
 
         $this->add_action_buttons(false, get_string('upload'));
 

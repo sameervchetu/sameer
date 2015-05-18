@@ -130,6 +130,23 @@ class totara_program_generator extends component_generator_base {
     }
 
     /**
+     * Create a mock certification via the program generator + a few extra settings
+     *
+     * @param array $data Override default properties
+     * @return int        Program->id
+     */
+    public function create_certification($data = array()) {
+        $activeperiod = isset($data['activeperiod']) ? $data['activeperiod'] : '1 year';
+        $windowperiod = isset($data['windowperiod']) ? $data['windowperiod'] : '1 month';
+        $recertifydatetype  = isset($data['recertifydatetype']) ? $data['recertifydatetype'] : CERTIFRECERT_EXPIRY;
+
+        $program = $this->create_program($data);
+        $this->create_certification_settings($program->id, $activeperiod, $windowperiod, $recertifydatetype);
+
+        return $program->id;
+    }
+
+    /**
      * Create mock program
      *
      * @param array $data Override default properties
@@ -323,7 +340,35 @@ class totara_program_generator extends component_generator_base {
     }
 
     /**
-     * Add mock program to user
+     * Creates an individual assignment for a user.
+     *
+     * @param array $data   The array should contain programid and userid
+     * @return boolean      Success/failure
+     */
+    public function create_prog_assign($data) {
+        global $CFG;
+        require_once($CFG->dirroot . '/totara/program/lib.php');
+
+        // Create data.
+        $assign_data = new stdClass();
+        $assign_data->id = $data['programid'];
+        $assign_data->item = array(ASSIGNTYPE_INDIVIDUAL => array($data['userid'] => 1));
+        $assign_data->completiontime = array(ASSIGNTYPE_INDIVIDUAL => array($data['userid'] => 0));
+        $assign_data->completionevent = array(ASSIGNTYPE_INDIVIDUAL => array($data['userid'] => 0));
+        $assign_data->completioninstance = array(ASSIGNTYPE_INDIVIDUAL => array($data['userid'] => null));
+        $assign_data->includechildren = array (ASSIGNTYPE_INDIVIDUAL => array($data['userid'] => 0));
+
+        // Assign item to program.
+        $assignmenttoprog = prog_assignments::factory(ASSIGNTYPE_INDIVIDUAL);
+        $assignmenttoprog->update_assignments($assign_data, false);
+
+        $program = new program($data['programid']);
+        return $program->update_learner_assignments();
+    }
+
+    /**
+     * Add users to a mock program in bulk.
+     * Note: This over rides any existing program assignments.
      *
      * @param int $programid Program id
      * @param array $userids User ids array of int
@@ -355,7 +400,7 @@ class totara_program_generator extends component_generator_base {
     }
 
     /**
-     * Assign users to a program
+     * Assign users to a program with a random completion date, generating some exceptions.
      *
      * @param int $programid Program id
      * @param int $assignmenttype Assignment type

@@ -81,6 +81,7 @@ function show_rpl($type, $user, $rpl, $describe, $fulldescribe, $cmid = null) {
     if ($edituser == $user->id) {
         // Show edit form
         print '<form action="save_rpl.php?type='.$type.'&course='.$course->id.'&sort='.$sort.'&start='.$start.'&redirect=1" method="post">';
+        print '<input type="hidden" name="sesskey" value="'.sesskey().'" />';
         print '<input type="hidden" name="user" value="'.$user->id.'" />';
         print '<input type="hidden" name="cmid" value="'.$cmid.'" />';
         print '<input type="text" name="rpl" value="'.format_string($rpl).'" maxlength="255" />';

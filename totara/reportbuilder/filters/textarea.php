@@ -48,8 +48,10 @@ class rb_filter_textarea extends rb_filter_type {
         $advanced = $this->advanced;
 
         $objs = array();
-        $objs[] =& $mform->createElement('select', $this->name . '_op', null, $this->getOperators());
-        $objs[] =& $mform->createElement('text', $this->name, null);
+        $objs['select'] = $mform->createElement('select', $this->name.'_op', null, $this->getOperators());
+        $objs['text'] = $mform->createElement('text', $this->name, null);
+        $objs['select']->setLabel(get_string('limiterfor', 'filters', $label));
+        $objs['text']->setLabel(get_string('valuefor', 'filters', $label));
         $mform->setType($this->name . '_op', PARAM_INT);
         $mform->setType($this->name, PARAM_TEXT);
         $grp =& $mform->addElement('group', $this->name . '_grp', $label, $objs, '', false);

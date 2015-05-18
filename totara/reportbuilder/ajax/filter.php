@@ -37,10 +37,10 @@ $reportid = required_param('id', PARAM_INT);
 switch ($action) {
     case 'add' :
         $filter = required_param('filter', PARAM_TEXT);
-        $filtername = optional_param('filtername', '', PARAM_TEXT);
+        $filtername = optional_param('filtername', '', PARAM_ALPHANUMEXT);
         $customname = optional_param('customname', 0, PARAM_BOOL);
         $advanced = optional_param('advanced', 0, PARAM_BOOL);
-        $regiontext = optional_param('region', 0, PARAM_TEXT);
+        $regiontext = optional_param('region', 0, PARAM_ALPHA);
 
         switch ($regiontext) {
             case 'standard':

@@ -2672,7 +2672,7 @@ function xmldb_facetoface_upgrade($oldversion=0) {
         list($insql, $inparam) = $DB->get_in_or_equal($status);
         $sql = "INSERT INTO {facetoface_signup_info_data}
                     (fieldid, facetofacesignupid, data)
-                SELECT  ". $cancellationfieldid .", id, note
+                SELECT  ". $signupfieldid .", id, note
                   FROM {facetoface_signups_status}
                  WHERE statuscode {$insql}
                    AND superceded = 0
@@ -2681,7 +2681,7 @@ function xmldb_facetoface_upgrade($oldversion=0) {
 
         $sql = "INSERT INTO {facetoface_cancellation_info_data}
                     (fieldid, facetofacecancellationid, data)
-                SELECT  ". $signupfieldid .", id, note
+                SELECT  ". $cancellationfieldid .", id, note
                   FROM {facetoface_signups_status}
                  WHERE statuscode = :cancelled
                    AND superceded = 0

@@ -739,8 +739,15 @@ class appraisal {
             $alert->fullmessage = $formdata->alertbody;
             $alert->fullmessagehtml = $alert->fullmessage;
 
-            $params = array('appraisalid' => $formdata->id, 'timecompleted' => null, 'status' => self::STATUS_ACTIVE);
-            $learners = $DB->get_records('appraisal_user_assignment', $params, null, 'userid AS id');
+            $learnersql = "SELECT u.*
+                            FROM {appraisal_user_assignment} aua
+                       LEFT JOIN {user} u
+                              ON aua.userid = u.id
+                           WHERE aua.appraisalid = :appraisalid
+                             AND aua.timecompleted IS NULL
+                             AND aua.status = :status";
+            $learnerparams = array('appraisalid' => $formdata->id, 'status' => self::STATUS_ACTIVE);
+            $learners = $DB->get_records_sql($learnersql, $learnerparams);
 
             foreach ($learners as $learner) {
                 $alert->userto = $learner;
@@ -751,7 +758,7 @@ class appraisal {
             $alert->subject = get_string('closealerttitledefault', 'totara_appraisal', $this);
 
             // Find all users in roles that are not learner, who have a learner who is not finished.
-            $sql = 'SELECT ara.userid AS id,
+            $rolesql = 'SELECT ara.userid AS id,
                            ' . sql_group_concat($DB->sql_fullname('usr.firstname', 'usr.lastname')) . ' AS staff
                       FROM {appraisal_user_assignment} aua
                       JOIN {appraisal_role_assignment} ara
@@ -759,13 +766,13 @@ class appraisal {
                       JOIN {user} usr
                         ON aua.userid = usr.id
                      WHERE aua.timecompleted IS NULL
-                       AND aua.appraisalid = ?
-                       AND aua.status = ?
-                       AND ara.appraisalrole != ?
+                       AND aua.appraisalid = :appraisalid
+                       AND aua.status = :status
+                       AND ara.appraisalrole != :roletype
                        AND ara.userid <> 0
-                     GROUP BY ara.userid';
-
-            $roleusers = $DB->get_records_sql($sql, array($formdata->id, self::STATUS_ACTIVE, self::ROLE_LEARNER));
+                  GROUP BY ara.userid';
+            $roleparams = array('appraisalid' => $formdata->id, 'status' => self::STATUS_ACTIVE, 'roletype' => self::ROLE_LEARNER);
+            $roleusers = $DB->get_records_sql($rolesql, $roleparams);
 
             foreach ($roleusers as $roleuser) {
                 $formdata->staff = $roleuser->staff;
@@ -2644,6 +2651,7 @@ class appraisal_stage {
                 'context' => context_system::instance(),
                 'userid' => $subjectid,
                 'other' => array(
+                    'appraisalid' => $this->appraisalid,
                     'stageid' => $this->id,
                     'time' => time(),
                 )
@@ -4296,6 +4304,14 @@ class appraisal_message {
     const EVENT_STAGE_DUE = 'stage_due';
 
     /**
+     * Only send messages if they are in the appropriate state.
+     * This currently only applies to stage due messages.
+     */
+    const MESSAGE_SEND_ANY_STATE = 0;
+    const MESSAGE_SEND_ONLY_COMPLETE = 1;
+    const MESSAGE_SEND_ONLY_INCOMPLETE = -1;
+
+    /**
      * Period types for messages before/after event
      */
     const PERIOD_DAY = 1;
@@ -4353,7 +4369,7 @@ class appraisal_message {
      * Restrictions of sending message according stage
      * @var int
      */
-    protected $stageiscompleted = 0;
+    protected $stageiscompleted = self::MESSAGE_SEND_ANY_STATE;
 
     /**
      * Event was triggered
@@ -4428,8 +4444,8 @@ class appraisal_message {
     /**
      * Set period before/after event it should be run
      *
-     * @param type $delta
-     * @param type $period
+     * @param int $delta
+     * @param int $period
      */
     public function set_delta($delta, $period = 0) {
         if ($delta != 0) {
@@ -4443,12 +4459,13 @@ class appraisal_message {
 
 
     /**
-     * Set roles that should receive message events
+     * Set roles that should receive message events.
+     * stageiscompleted other than MESSAGE_SEND_ANY_STATE is only used if the event type is EVENT_STAGE_DUE.
      *
      * @param array $roles of int
-     * @param int $stageiscompleted -1 - only incomplete, 0 - all, 1 - only complete
+     * @param int $stageiscompleted self::MESSAGE_SEND_XXX
      */
-    public function set_roles(array $roles, $stageiscompleted) {
+    public function set_roles(array $roles, $stageiscompleted = self::MESSAGE_SEND_ANY_STATE) {
         $this->roles = $roles;
         $this->stageiscompleted = $stageiscompleted;
     }
@@ -4617,13 +4634,13 @@ class appraisal_message {
 
 
     /**
-     * Is current time is time for sending messages (or if it's immediate)
+     * If current time is time for sending messages.
      *
      * @param int $time
      * @return bool
      */
     public function is_time($time) {
-        return ($this->timescheduled > 0 && $this->timescheduled <= $time || $this->delta == 0);
+        return ($this->timescheduled > 0 && $this->timescheduled <= $time);
     }
 
 
@@ -4637,87 +4654,118 @@ class appraisal_message {
     }
 
 
+
     /**
-     * Send messages to recepients
+     * This is an appraisal-wide message.
+     * Send it to all users in the appraisal, and flag that it is sent in the appraisal_event triggered field.
      *
-     * @return bool if attempt was successfull
+     * @return bool true if there were no problems
      */
-    public function send() {
-        global $DB, $CFG;
+    public function send_appraisal_wide_message() {
+        global $DB;
 
+        // Don't send this message if it has already been sent.
         if ($this->triggered) {
-            return false;
+            return;
         }
 
-        $where = "appraisalid = ?";
-        $params = array($this->appraisalid);
+        // Get all user assignments currently in the appraisal.
+        $userassignments = $DB->get_records('appraisal_user_assignment', array('appraisalid' => $this->appraisalid));
 
-        // If this gets any more complex we might want to replace it with get_in_or_equal().
-        if ($this->type == 'appraisal_stage_completion') {
-            $where .= " AND (status = ? OR status = ?)";
-            $params[] = appraisal::STATUS_ACTIVE;
-            $params[] = appraisal::STATUS_COMPLETED;
-        } else {
-            $where .= " AND status = ?";
-            $params[] = appraisal::STATUS_ACTIVE;
-        }
+        $this->send($userassignments);
 
-        $learners = $DB->get_records_select('appraisal_user_assignment', $where, $params);
+        // Update the database, so that we don't send this message again.
+        $this->triggered = 1;
+        $this->save();
+    }
+
+
+    /**
+     * Send this message to all roles associated with the given user.
+     *
+     * @param int $userid the user id of the learner that this event relates to.
+     */
+    public function send_user_specific_message($userid) {
+        global $DB;
+
+        $userassignment = $DB->get_record('appraisal_user_assignment',
+            array('userid' => $userid, 'appraisalid' => $this->appraisalid));
+
+        $this->send(array($userassignment));
+
+        // Remove the user event record (assuming there is one), so that it's not sent again.
+        $DB->delete_records('appraisal_user_event', array('userid' => $userid, 'eventid' => $this->id));
+    }
+
+
+    /**
+     * Send this message to all roles related to the given user_assignments.
+     *
+     * $param array $userassignments The user_assignment records to send the message to.
+     */
+    public function send($userassignments) {
+        global $DB;
+
         $sentaddress = array();
+        foreach ($userassignments as $userassignment) {
+            // Get all applicable roles that are involved in the appraisal.
+            list($rolessql, $params) = $DB->get_in_or_equal($this->roles, SQL_PARAMS_NAMED, 'role');
+            $sql = "SELECT appraisalrole, userid
+                          FROM {appraisal_role_assignment}
+                         WHERE appraisaluserassignmentid = :userassignmentid
+                           AND appraisalrole {$rolessql}";
+            $params['userassignmentid'] = $userassignment->id;
+            $roleassignments = $DB->get_records_sql($sql, $params);
 
-        foreach ($learners as $learner) {
-            $params = array('appraisaluserassignmentid' => $learner->id);
-            $assignedroles = $DB->get_records('appraisal_role_assignment', $params, '', 'appraisalrole, id, userid');
-            foreach ($this->roles as $role) {
-                if (isset($assignedroles[$role])) {
-                    $rcptuserid = $assignedroles[$role]->userid;
-                    // Send only if complete/incomplete.
-                    if ($this->type == self::EVENT_STAGE_DUE && $this->stageiscompleted != 0) {
-                        // Get stage completion.
-                        $stage = new appraisal_stage($this->stageid);
-                        if ($role == appraisal::ROLE_LEARNER) {
-                            $approle = new appraisal_user_assignment($learner->id);
-                        } else {
-                            $approle = new appraisal_role_assignment($assignedroles[$role]->id);
-                        }
-                        $complete = $stage->is_completed($approle);
-                        // Skip completed if set "only to incompleted" and contra versa.
-                        if ($this->stageiscompleted == 1 && !$complete ||
-                            $this->stageiscompleted == -1 && $complete) {
-                            continue;
-                        }
+            // Send a message to each role assignment user.
+            foreach ($roleassignments as $roleassignment) {
+                $rcptuserid = $roleassignment->userid;
+                $rcpt = $DB->get_record('user', array('id' => $rcptuserid));
+                $role = $roleassignment->appraisalrole;
+
+                // Send only if complete/incomplete.
+                if ($this->type == self::EVENT_STAGE_DUE && $this->stageiscompleted != self::MESSAGE_SEND_ANY_STATE) {
+                    // Get stage completion.
+                    $stage = new appraisal_stage($this->stageid);
+                    $roleassignment = appraisal_role_assignment::get_role($this->appraisalid, $userassignment->userid,
+                        $rcptuserid, $role);
+                    $complete = $stage->is_completed($roleassignment);
+                    // Skip completed if set "only to incompleted" and contra versa.
+                    if ($this->stageiscompleted == self::MESSAGE_SEND_ONLY_COMPLETE && !$complete ||
+                        $this->stageiscompleted == self::MESSAGE_SEND_ONLY_INCOMPLETE && $complete) {
+                        continue;
                     }
+                }
 
-                    $message = $this->get_message($role);
-                    $rcpt = $DB->get_record('user', array('id' => $rcptuserid), '*', MUST_EXIST);
+                // Get the message content, which may be different depending on the role.
+                $message = $this->get_message($role);
 
-                    // Create a message.
-                    $eventdata = new stdClass();
-                    $eventdata->component         = 'moodle';
-                    $eventdata->name              = 'instantmessage';
-                    $eventdata->userfrom          = core_user::get_noreply_user();
-                    $eventdata->userto            = $rcpt;
-                    $eventdata->subject           = $message->name;
-                    $eventdata->fullmessage       = $message->content;
-                    $eventdata->fullmessageformat = FORMAT_PLAIN;
-                    // The content is plain text so make sure we convert linebreaks for the HTML content.
-                    $eventdata->fullmessagehtml   = nl2br($message->content);
-                    $eventdata->smallmessage      = $message->content;
+                // Create a message.
+                $eventdata = new stdClass();
+                $eventdata->component         = 'moodle';
+                $eventdata->name              = 'instantmessage';
+                $eventdata->userfrom          = core_user::get_noreply_user();
+                $eventdata->userto            = $rcpt;
+                $eventdata->subject           = $message->name;
+                $eventdata->fullmessage       = $message->content;
+                $eventdata->fullmessageformat = FORMAT_PLAIN;
+                // The content is plain text so make sure we convert linebreaks for the HTML content.
+                $eventdata->fullmessagehtml   = nl2br($message->content);
+                $eventdata->smallmessage      = $message->content;
 
-                    if (!isset($sentaddress[$rcpt->email]) || !in_array($message->id, $sentaddress[$rcpt->email])) {
-                        message_send($eventdata);
+                // Send the message, preventing duplicates. E.g. If someone is a manager and appraiser and there are two
+                // different messages set up then they will receive one of each type. If someone has multiple roles with
+                // all roles set to the same message then they will only receive one message.
+                if (!isset($sentaddress[$rcpt->email]) || !in_array($message->id, $sentaddress[$rcpt->email])) {
+                    tm_alert_send($eventdata);
 
-                        if (!isset($sentaddress[$rcpt->email])) {
-                            $sentaddress[$rcpt->email] = array();
-                        }
-                        $sentaddress[$rcpt->email][] = $message->id;
+                    if (!isset($sentaddress[$rcpt->email])) {
+                        $sentaddress[$rcpt->email] = array();
                     }
+                    $sentaddress[$rcpt->email][] = $message->id;
                 }
             }
         }
-        $this->triggered = 1;
-        $this->save();
-        return true;
     }
 
 
@@ -5300,7 +5348,7 @@ class appraisal_role_assignment {
  */
 class appraisal_user_assignment {
     /**
-     * Role assignment id
+     * User assignment id
      * @var int
      */
     protected $id = 0;

@@ -84,17 +84,29 @@ class rb_filter_date extends rb_filter_type {
         }
         if ($includebetween) {
             $objs[] =& $mform->createElement('static', null, null, html_writer::empty_tag('br'));
-            $objs[] =& $mform->createElement('checkbox', $this->name.'daysbeforechkbox', null,
+            $objs['pre'] =& $mform->createElement('checkbox', $this->name.'daysbeforechkbox', null,
                     get_string('dateisbetween', 'totara_reportbuilder'));
-            $objs[] =& $mform->createElement('text', $this->name.'daysbefore', null, 'size="2"');
+            $accesslabel = html_writer::tag(
+                'label',
+                get_string('isbeforetoday', 'totara_reportbuilder'),
+                array('class' => 'accesshide', 'for' => 'id_' . $objs['pre']->getAttribute('name'))
+            );
+            $objs[] =& $mform->createElement('static', null, null, $accesslabel);
+            $objs[] =& $mform->createElement('text', $this->name.'daysbefore', get_string('isbeforetoday', 'totara_reportbuilder'), 'size="2"');
             $mform->setType($this->name.'daysbefore', PARAM_INT);
             $objs[] =& $mform->createElement('static', null, null, get_string('isbeforetoday', 'totara_reportbuilder'));
             $objs[] =& $mform->createElement('static', null, null,
                     html_writer::span(get_string('isrelativetotoday', 'totara_reportbuilder')));
             $objs[] =& $mform->createElement('static', null, null, html_writer::empty_tag('br'));
-            $objs[] =& $mform->createElement('checkbox', $this->name.'daysafterchkbox', null,
+            $objs['post'] =& $mform->createElement('checkbox', $this->name.'daysafterchkbox', null,
                     get_string('dateisbetween', 'totara_reportbuilder'));
-            $objs[] =& $mform->createElement('text', $this->name.'daysafter', null, 'size="2"');
+            $accesslabel = html_writer::tag(
+                'label',
+                get_string('isaftertoday', 'totara_reportbuilder'),
+                array('class' => 'accesshide', 'for' => 'id_' . $objs['post']->getAttribute('name'))
+            );
+            $objs[] =& $mform->createElement('static', null, null, $accesslabel);
+            $objs[] =& $mform->createElement('text', $this->name.'daysafter', get_string('isaftertoday', 'totara_reportbuilder'), 'size="2"');
             $mform->setType($this->name.'daysafter', PARAM_INT);
             $objs[] =& $mform->createElement('static', null, null, get_string('isaftertoday', 'totara_reportbuilder'));
             $objs[] =& $mform->createElement('static', null, null,

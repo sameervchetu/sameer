@@ -5,7 +5,8 @@ Feature: Play waiting list lottery
   I need to authorise seminar signups
 
   Background:
-    Given the following "users" exist:
+    Given I am on a totara site
+    And the following "users" exist:
       | username | firstname | lastname | email               |
       | teacher1 | Terry1    | Teacher1 | teacher1@moodle.com |
       | student1 | Sam1      | Student1 | student1@moodle.com |
@@ -33,7 +34,6 @@ Feature: Play waiting list lottery
 
   @javascript
   Scenario: The second student to sign up to the session should go on waiting list
-
     Given I log in as "teacher1"
     And I follow "Course 1"
     And I turn editing mode on

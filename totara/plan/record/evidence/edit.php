@@ -109,26 +109,30 @@ if (!empty($evidenceid) || $deleteflag) {
 }
 
 if ($deleteflag && $deleteconfirmed) {
-    // Deletion confirmed
+    // Deletion confirmed.
     require_sesskey();
 
+    // TODO: trigger evidence unlinked events, see T-14190.
+    /*
+    $sql = "SELECT p.id, p.name
+              FROM {dp_plan} p
+              JOIN {dp_plan_evidence_relation} er ON er.planid = p.id
+             WHERE er.evidenceid = :evidenceid";
+    $plans = $DB->get_records_sql($sql, array('evidenceid' => $item->id));
+    */
+
     $transaction = $DB->start_delegated_transaction();
-    $result = $DB->delete_records('dp_plan_evidence', array('id' => $item->id));
-    $result = $result && $DB->delete_records('dp_plan_evidence_relation', array('evidenceid' => $item->id));
+    $item = $DB->get_record('dp_plan_evidence', array('id' => $item->id), '*', MUST_EXIST);
+    $DB->delete_records('dp_plan_evidence', array('id' => $item->id));
+    $DB->delete_records('dp_plan_evidence_relation', array('evidenceid' => $item->id));
+    $fs = get_file_storage();
+    $fs->delete_area_files($TEXTAREA_OPTIONS['context']->id, 'totara_plan', 'attachment', $item->id);
     $transaction->allow_commit();
 
-    if (!$result) {
-        print_error('error:evidencedeleted', 'totara_plan');
-    } else {
-        $fs = get_file_storage();
-        $fs->delete_area_files($TEXTAREA_OPTIONS['context']->id, 'totara_plan', 'attachment', $item->id);
+    \totara_plan\event\evidence_deleted::create_from_instance($item)->trigger();
 
-        add_to_log(SITEID, 'plan', 'deleted evidence',
-                new moodle_url('/totara/plan/record/evidence/edit.php', array('id' => $item->id)),
-                "{$item->name} (ID:{$item->id})");
-        totara_set_notification(get_string('evidencedeleted', 'totara_plan'),
-                $indexurl, array('class' => 'notifysuccess'));
-    }
+    totara_set_notification(get_string('evidencedeleted', 'totara_plan'),
+            $indexurl, array('class' => 'notifysuccess'));
 }
 
 $item->descriptionformat = FORMAT_HTML;
@@ -158,36 +162,43 @@ if ($data = $mform->get_data()) {
     $data->timemodified = time();
     $data->userid = $userid;
 
-    // Settings for postupdate
-    $data->description       = '';
-
     if (empty($data->id)) {
-        // Create a new record
+        // Create a new record.
+        $data->description       = '';
         $data->timecreated = $data->timemodified;
         $data->usermodified = $USER->id;
         $data->planid = 0;
         $data->id = $DB->insert_record('dp_plan_evidence', $data);
-        $result = 'added';
-    } else {
-        // Update a record
-        $DB->update_record('dp_plan_evidence', $data);
-        $result = 'updated';
-    }
 
-    // save and relink embedded images
-    $data = file_postupdate_standard_editor($data, 'description',
+        // Save and relink embedded images.
+        $data = file_postupdate_standard_editor($data, 'description',
             $TEXTAREA_OPTIONS, $TEXTAREA_OPTIONS['context'], 'totara_plan', 'dp_plan_evidence', $data->id);
-
-    // process files, update the data record
-    $data = file_postupdate_standard_filemanager($data, 'attachment',
+        $data = file_postupdate_standard_filemanager($data, 'attachment',
             $fileoptions, $FILEPICKER_OPTIONS['context'], 'totara_plan', 'attachment', $data->id);
 
-    $DB->update_record('dp_plan_evidence', $data);
+        $DB->update_record('dp_plan_evidence', $data);
 
-    add_to_log(SITEID, 'plan', "{$result} evidence",
-            new moodle_url('/totara/plan/record/evidence/edit.php', array('id' => $data->id)),
-            "{$item->name} (ID:{$data->id})");
-    totara_set_notification(get_string('evidence' . $result, 'totara_plan'), $itemurl, array('class' => 'notifysuccess'));
+        $item = $DB->get_record('dp_plan_evidence', array('id' => $data->id), '*', MUST_EXIST);
+        \totara_plan\event\evidence_created::create_from_instance($item)->trigger();
+
+        totara_set_notification(get_string('evidenceadded', 'totara_plan'), $itemurl, array('class' => 'notifysuccess'));
+
+    } else {
+        // Update a record.
+        // Save and relink embedded images.
+        $data = file_postupdate_standard_editor($data, 'description',
+            $TEXTAREA_OPTIONS, $TEXTAREA_OPTIONS['context'], 'totara_plan', 'dp_plan_evidence', $data->id);
+        $data = file_postupdate_standard_filemanager($data, 'attachment',
+            $fileoptions, $FILEPICKER_OPTIONS['context'], 'totara_plan', 'attachment', $data->id);
+
+        $DB->update_record('dp_plan_evidence', $data);
+
+        $item = $DB->get_record('dp_plan_evidence', array('id' => $data->id), '*', MUST_EXIST);
+        \totara_plan\event\evidence_updated::create_from_instance($item)->trigger();
+
+        totara_set_notification(get_string('evidenceupdated', 'totara_plan'), $itemurl, array('class' => 'notifysuccess'));
+    }
+
 } else if ($mform->is_cancelled()) {
     if ($action == 'add') {
         redirect($indexurl);

@@ -95,8 +95,10 @@ class rb_filter_select extends rb_filter_type {
         } else {
             // full select mode
             $objs = array();
-            $objs[] =& $mform->createElement('select', $this->name . '_op', null, $this->get_operators());
-            $objs[] =& $mform->createElement('select', $this->name, null, $options, $attr);
+            $objs['select'] = $mform->createElement('select', $this->name.'_op', null, $this->get_operators());
+            $objs['text'] = $mform->createElement('select', $this->name, null, $options, $attr);
+            $objs['select']->setLabel(get_string('limiterfor', 'filters', $label));
+            $objs['text']->setLabel(get_string('valuefor', 'filters', $label));
             $mform->setType($this->name . '_op', PARAM_INT);
             $mform->setType($this->name, PARAM_TEXT);
             $grp =& $mform->addElement('group', $this->name . '_grp', $label, $objs, '', false);

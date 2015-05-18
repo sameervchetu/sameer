@@ -27,9 +27,11 @@
  */
 
 require_once(dirname(dirname(dirname(__FILE__))) . '/config.php');
-require_once($CFG->libdir.'/adminlib.php');
+require_once($CFG->libdir  . '/adminlib.php');
 require_once($CFG->dirroot . '/totara/reportbuilder/lib.php');
 require_once($CFG->dirroot . '/totara/reportbuilder/scheduled_forms.php');
+require_once($CFG->dirroot . '/totara/core/js/lib/setup.php');
+require_once($CFG->dirroot . '/totara/reportbuilder/email_setting_schedule.php');
 
 require_login();
 $PAGE->set_context(context_user::instance($USER->id));
@@ -72,6 +74,47 @@ $savedsearches = $report->get_saved_searches($schedule->reportid, $USER->id);
 if (!isset($report->src->redirecturl)) {
     $savedsearches[0] = get_string('alldata', 'totara_reportbuilder');
 }
+
+// Get list of emails settings for this schedule report.
+$schedule->audiences = email_setting_schedule::get_audiences_to_email($id);
+$schedule->systemusers = email_setting_schedule::get_system_users_to_email($id);
+$schedule->externalusers = email_setting_schedule::get_external_users_to_email($id);
+
+$existingusers = array();
+foreach ($schedule->systemusers as $user) {
+    $existingusers[$user->id] = $user;
+}
+
+$existingaudiences = array();
+foreach ($schedule->audiences as $audience) {
+    $existingaudiences[$audience->id] = $audience;
+}
+
+// Get existing users and audiences IDs.
+$existingsyusers = !empty($existingusers) ? implode(',', array_keys($existingusers)) : '';
+$existingaud = !empty($existingaudiences) ? implode(',', array_keys($existingaudiences)) : '';
+
+// Load JS for lightbox.
+local_js(array(
+    TOTARA_JS_DIALOG,
+    TOTARA_JS_TREEVIEW
+));
+
+$args = array('args'=>'{"reportid":' . $reportid . ','
+    . '"id":' . $id . ','
+    . '"existingsyusers":"' . $existingsyusers .'",'
+    . '"existingaud":"' . $existingaud .'"}'
+);
+
+$jsmodule = array('name' => 'totara_email_scheduled_report',
+    'fullpath' => '/totara/reportbuilder/js/email_scheduled_report.js',
+    'requires' => array('json')
+);
+
+$PAGE->requires->strings_for_js(array('addsystemusers', 'addcohorts', 'emailexternaluserisonthelist'), 'totara_reportbuilder');
+$PAGE->requires->strings_for_js(array('err_email'), 'form');
+$PAGE->requires->strings_for_js(array('error:badresponsefromajax'), 'totara_cohort');
+$PAGE->requires->js_init_call('M.totara_email_scheduled_report.init', $args, false, $jsmodule);
 
 // Form definition.
 $mform = new scheduled_reports_new_form(
@@ -161,6 +204,15 @@ function add_scheduled_report($fromform) {
             $DB->update_record('report_builder_schedule', $todb);
             $newid = $todb->id;
         }
+
+        // Get audiences, system users and external users and update email tables.
+        $audiences = (!empty($fromform->audiences)) ? explode(',', $fromform->audiences) : array();
+        $systemusers = (!empty($fromform->systemusers)) ? explode(',', $fromform->systemusers) : array();
+        $externalusers = (!empty($fromform->externalemails)) ? explode(',', $fromform->externalemails) : array();
+
+        $scheduleemail = new email_setting_schedule($newid);
+        $scheduleemail->set_email_settings($audiences, $systemusers, $externalusers);
+
         $transaction->allow_commit();
 
         return $newid;

@@ -214,11 +214,13 @@ if ($session->datetimeknown && facetoface_has_session_started($session, $timenow
     exit();
 }
 
-if (!facetoface_session_has_capacity($session, $context, MDL_F2F_STATUS_WAITLISTED) && !$session->allowoverbook) {
-    echo $OUTPUT->notification(get_string('sessionisfull', 'facetoface'), 'notifyproblem');
-    echo $OUTPUT->box_end();
-    echo $OUTPUT->footer($course);
-    exit();
+if (!facetoface_get_attendee($session->id, $USER->id)
+    && !facetoface_session_has_capacity($session, $context, MDL_F2F_STATUS_WAITLISTED)
+    && !$session->allowoverbook) {
+        echo $OUTPUT->notification(get_string('sessionisfull', 'facetoface'), 'notifyproblem');
+        echo $OUTPUT->box_end();
+        echo $OUTPUT->footer($course);
+        exit();
 }
 
 echo facetoface_print_session($session, $viewattendees, false, false, $signedup);

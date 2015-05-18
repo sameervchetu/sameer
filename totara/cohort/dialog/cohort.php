@@ -60,10 +60,11 @@ if (!$capable) {
 }
 
 if (!empty($selected)) {
-    $selected = $DB->get_records_select('cohort', "id IN ({$selected})", array(), '', 'id, name as fullname');
+    list($selectedsql, $selectedparams) = $DB->get_in_or_equal(explode(',', $selected));
+    $selected = $DB->get_records_select('cohort', "id {$selectedsql}", $selectedparams, 'name, idnumber', 'id, name as fullname');
 }
 
-$items = $DB->get_records('cohort');
+$items = $DB->get_records('cohort', null, 'name, idnumber');
 
 // Don't let them remove the currently selected ones
 $unremovable = $selected;

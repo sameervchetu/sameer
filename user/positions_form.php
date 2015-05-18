@@ -454,22 +454,29 @@ class user_position_assignment_form extends moodleform {
     }
 
     function validation($data, $files) {
+        global $POSITION_TYPES;
 
         $mform = $this->_form;
         $can_edit_tempmanager = empty($this->_customdata['can_edit_tempmanager']) ? 0 : 1;
+        $type = $this->_customdata['type'];
+        // Check if an aspirational position
+        $aspirational = false;
+        if (isset($POSITION_TYPES[POSITION_TYPE_ASPIRATIONAL]) && $type == $POSITION_TYPES[POSITION_TYPE_ASPIRATIONAL]) {
+            $aspirational = true;
+        }
 
         $result = array();
 
-        // Enforce start date before finish date
-        if ($data['timevalidfrom'] > $data['timevalidto'] && $data['timevalidfrom'] !== 0 && $data['timevalidto'] !== 0) {
+        // Enforce start date before finish date, for primary and secondary positions.
+        if (!$aspirational && $data['timevalidfrom'] > $data['timevalidto'] && $data['timevalidfrom'] !== 0 && $data['timevalidto'] !== 0) {
             $errstr = get_string('error:startafterfinish','totara_hierarchy');
             $result['timevalidfrom'] = $errstr;
             $result['timevalidto'] = $errstr;
             unset($errstr);
         }
 
-        // If tempmanager, check that expiry is set.
-        if ($can_edit_tempmanager && $mform->getElement('tempmanagerid')->getValue()) {
+        // If setting a temporary manager, check that an expiry date is set.
+        if (!$aspirational && $can_edit_tempmanager && $mform->getElement('tempmanagerid')->getValue()) {
             if (empty($data['tempmanagerexpiry'])) {
                 $result['tempmanagerexpiry'] = get_string('error:tempmanagerexpirynotset', 'totara_core');
             } else {

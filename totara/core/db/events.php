@@ -44,4 +44,8 @@ $observers = array (
         'eventname' => '\totara_core\event\bulk_enrolments_ended',
         'callback'  => 'totara_core_observer::bulk_enrolments_ended',
     ),
+    array(
+        'eventname' => '\core\event\course_completed',
+        'callback'  => 'totara_core_observer::course_criteria_review',
+    ),
 );

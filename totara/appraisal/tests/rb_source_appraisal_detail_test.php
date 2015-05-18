@@ -56,8 +56,10 @@ class totara_appraisal_rb_source_appraisal_detail_testcase extends appraisal_tes
         $this->add_column($report, 'appraisal', 'name', null, null, null, 0);
         $this->add_column($report, 'rolelearner', 'answers', null, null, null, 0);
 
-        $SESSION->reportbuilder[$rid]['appraisalid'] = $appraisal->get()->id;
+        // Mock report parameter.
+        $_GET['appraisalid'] = $appraisal->get()->id;
         $report = new reportbuilder($rid);
+        unset($_GET['appraisalid']);
 
         list($sql, $params, $cache) = $report->build_query();
 

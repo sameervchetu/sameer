@@ -62,3 +62,31 @@ function totara_core_mysql_environment_check(environment_results $result) {
     // Do not show anything for other databases.
     return null;
 }
+
+/**
+ * Check that the Totara build date always goes up.
+ * @param environment_results $result
+ * @return environment_results
+ */
+function totara_core_linear_upgrade_check(environment_results $result) {
+    global $CFG;
+    if (empty($CFG->totara_build)) {
+        // This is a new install or upgrade from Moodle.
+        return null;
+    }
+
+    $result->info = 'linear_upgrade';
+
+    $TOTARA = new stdClass();
+    $TOTARA->build = 0;
+    require("$CFG->dirroot/version.php");
+
+    if ($TOTARA->build < $CFG->totara_build) {
+        $result->setRestrictStr(array('upgradenonlinear', 'totara_core', $CFG->totara_build));
+        $result->setStatus(false);
+        return $result;
+    }
+
+    // Everything is fine, no need for any info.
+    return null;
+}

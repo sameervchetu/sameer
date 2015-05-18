@@ -282,20 +282,18 @@ class cohort_rule_sqlhandler_in_poscustomfield extends cohort_rule_sqlhandler_in
     protected function construct_sql_snippet($field, $not, $lov) {
         global $DB;
 
-        list($sqlin, $params) = $DB->get_in_or_equal($lov, SQL_PARAMS_NAMED, 'ipc'.$this->ruleid, ($not != 'not'));
-
-        $sqlhandler = new stdClass();
-        $sqlhandler->sql = "exists("
-                ."select 1 "
-                ."from {pos_assignment} pa "
-                ."inner join {pos_type_info_data} ptid "
-                ."on pa.positionid=ptid.positionid "
-                ."where pa.userid=u.id "
-                ."and pa.type=".POSITION_TYPE_PRIMARY." "
-                ."and ptid.fieldid={$field} "
-                ."and {$DB->sql_compare_text('ptid.data')} {$sqlin}"
-            .")";
-        $sqlhandler->params = $params;
+        $sql = "EXISTS (
+            SELECT 1
+            FROM {pos_assignment} pa
+            INNER JOIN {pos_type_info_data} ptid
+              ON pa.positionid = ptid.positionid
+            WHERE pa.userid = u.id
+            AND pa.type = ".POSITION_TYPE_PRIMARY."
+            AND ptid.fieldid = {$field}
+            AND ( ";
+        $query = " ptid.data";
+        $sqlhandler = $this->get_query_base_operator($this->equal, $query, $lov);
+        $sqlhandler->sql = $sql . $sqlhandler->sql . " ) ) ";
         return $sqlhandler;
     }
 }
@@ -348,20 +346,19 @@ class cohort_rule_sqlhandler_in_posorgcustomfield extends cohort_rule_sqlhandler
     protected function construct_sql_snippet($field, $not, $lov) {
         global $DB;
 
-        list($sqlin, $params) = $DB->get_in_or_equal($lov, SQL_PARAMS_NAMED, 'ipoc'.$this->ruleid, ($not != 'not'));
+        $sql = "EXISTS (
+            SELECT 1
+            FROM {pos_assignment} pa
+            INNER JOIN {org_type_info_data} otid
+              ON pa.organisationid = otid.organisationid
+            WHERE pa.userid = u.id
+            AND pa.type = ".POSITION_TYPE_PRIMARY."
+            AND otid.fieldid = {$field}
+            AND ( ";
+        $query = " otid.data";
+        $sqlhandler = $this->get_query_base_operator($this->equal, $query, $lov);
+        $sqlhandler->sql = $sql . $sqlhandler->sql . " ) ) ";
 
-        $sqlhandler = new stdClass();
-        $sqlhandler->sql = "exists ("
-                ."select 1 "
-                ."from {pos_assignment} pa "
-                ."inner join {org_type_info_data} otid "
-                ."on pa.organisationid=otid.organisationid "
-                ."where pa.userid=u.id "
-                ."and pa.type=".POSITION_TYPE_PRIMARY." "
-                ."and otid.fieldid={$field} "
-                ."and {$DB->sql_compare_text('otid.data')} {$sqlin}"
-            .")";
-        $sqlhandler->params = $params;
         return $sqlhandler;
     }
 }

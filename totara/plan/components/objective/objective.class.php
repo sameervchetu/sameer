@@ -621,6 +621,7 @@ class dp_objective_component extends dp_base_component {
                             (object)array('before'=>dp_get_approval_status_from_code($orig_objectives[$itemid]->approved),
                             'after' => dp_get_approval_status_from_code($record->approved))) . html_writer::empty_tag('br');
                     $approval->text = $text;
+                    $approval->itemid = $itemid;
                     $approval->itemname = $orig_objectives[$itemid]->fullname;
                     $approval->before = $orig_objectives[$itemid]->approved;
                     $approval->after = $record->approved;
@@ -637,8 +638,13 @@ class dp_objective_component extends dp_base_component {
             if ($this->plan->status != DP_PLAN_STATUS_UNAPPROVED && count($approvals)>0) {
                 foreach ($approvals as $approval) {
                     $this->send_component_approval_alert($approval);
-                    $action = ($approval->after == DP_APPROVAL_APPROVED) ? 'approved' : 'declined';
-                    add_to_log(SITEID, 'plan', "{$action} objective", "component.php?id={$this->plan->id}&amp;c=objective", $approval->itemname);
+                    if ($approval->after == DP_APPROVAL_APPROVED) {
+                        \totara_plan\event\approval_approved::create_from_component(
+                            $this->plan, 'objective', $approval->itemid, $approval->itemname)->trigger();
+                    } else {
+                        \totara_plan\event\approval_declined::create_from_component(
+                            $this->plan, 'objective', $approval->itemid, $approval->itemname)->trigger();
+                    }
                 }
             }
 
@@ -708,8 +714,10 @@ class dp_objective_component extends dp_base_component {
 
         $transaction->allow_commit();
 
+        \totara_plan\event\component_deleted::create_from_component(
+            $this->plan, 'objective', $caid, $objective->fullname)->trigger();
+
         // are we OK? then send the alerts
-        add_to_log(SITEID, 'plan', 'deleted objective', "component.php?id={$this->plan->id}&amp;c=objective", "{$objective->fullname} (ID:{$caid})");
         $this->send_deletion_alert($objective);
         dp_plan_check_plan_complete(array($this->plan->id));
 
@@ -742,12 +750,15 @@ class dp_objective_component extends dp_base_component {
         $rec->scalevalueid = $scalevalueid ? $scalevalueid : $DB->get_field('dp_objective_scale', 'defaultid', array('id' => $this->get_setting('objectivescale')));
         $rec->approved = $this->approval_status_after_update();
 
-        $newid = $DB->insert_record('dp_plan_objective', $rec);
-        $this->send_creation_alert($newid, $fullname);
-        add_to_log(SITEID, 'plan', 'added objective', "component.php?id={$rec->planid}&amp;c=objective", $rec->fullname);
-        dp_plan_item_updated($USER->id, 'objective', $newid);
+        $rec->id = $DB->insert_record('dp_plan_objective', $rec);
 
-        return $newid;
+        \totara_plan\event\component_created::create_from_component($this->plan, 'objective', $rec->id, $rec->fullname)->trigger();
+
+        $this->send_creation_alert($rec->id, $fullname);
+
+        dp_plan_item_updated($USER->id, 'objective', $rec->id);
+
+        return $rec->id;
     }
 
     /**

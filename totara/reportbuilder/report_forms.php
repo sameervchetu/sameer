@@ -1312,6 +1312,22 @@ class report_builder_course_expand_form extends moodleform {
         $action = $this->_customdata['action'];
         $url = $this->_customdata['url'];
 
+        if (count($inlineenrolmentelements) > 0) {
+            $notices = totara_get_notifications();
+            $noticeshtml = '';
+            foreach ($notices as $notice) {
+                if (isset($notice['class'])) {
+                    $notice['class'] = array('notifynotice');
+                }
+                $noticeshtml .= html_writer::tag(
+                    'div',
+                    clean_text($notice['message']),
+                    array('class' => renderer_base::prepare_classes($notice['class']))
+                );
+            }
+            $mform->addElement('static', 'notifications', $noticeshtml);
+        }
+
         if ($summary != '') {
             $mform->addElement('static', 'summary', get_string('coursesummary'), $summary);
         }
@@ -1332,13 +1348,6 @@ class report_builder_course_expand_form extends moodleform {
         }
 
         $mform->addElement('hidden', 'courseid', $courseid);
-
-        if (count($inlineenrolmentelements) > 0) {
-            // If we haven't enrolled there may be notifications with errors in so display them now.
-            $totararenderer = $PAGE->get_renderer('totara_core', null);
-            $notifications = $totararenderer->print_totara_notifications();
-            $mform->addElement('static', 'notifications', $notifications);
-        }
 
         foreach ($inlineenrolmentelements as $inlineenrolmentelement) {
             $mform->addElement($inlineenrolmentelement);

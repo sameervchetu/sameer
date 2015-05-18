@@ -1284,7 +1284,13 @@ function xmldb_totara_core_upgrade($oldversion) {
         $filterall = (!empty($CFG->filterall)) ? $CFG->filterall : 0;
         $CFG->filterall = 0;
         // Remove the hardcoded defaultfor and defaultinfofor strings in question_categories
-        $categories = $DB->get_recordset_select('question_categories', '', array());
+        $sql = "SELECT qc1.*
+                  FROM {question_categories} qc1
+                 WHERE qc1.parent = 0
+                   AND qc1.id = (SELECT MIN(qc2.id)
+                                   FROM {question_categories} qc2
+                                  WHERE qc2.contextid = qc1.contextid)";
+        $categories = $DB->get_recordset_sql($sql, array());
         $todelete = array();
         foreach ($categories as $category) {
             if ($context = context::instance_by_id($category->contextid, IGNORE_MISSING)) {
@@ -1458,6 +1464,24 @@ function xmldb_totara_core_upgrade($oldversion) {
 
         // Main savepoint reached.
         totara_upgrade_mod_savepoint(true, 2015021100, 'totara_core');
+    }
+
+
+    if ($oldversion < 2015030202) {
+        // Backport MDL-49543 from Moodle 2.9dev.
+
+        $table = new xmldb_table('badge_criteria');
+        $field = new xmldb_field('description', XMLDB_TYPE_TEXT, null, null, null, null, null);
+        // Conditionally add description field to the badge_criteria table.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+        $field = new xmldb_field('descriptionformat', XMLDB_TYPE_INTEGER, 2, null, XMLDB_NOTNULL, null, 0);
+        // Conditionally add description format field to the badge_criteria table.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+        totara_upgrade_mod_savepoint(true, 2015030202, 'totara_core');
     }
 
     return true;

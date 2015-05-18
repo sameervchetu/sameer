@@ -71,7 +71,9 @@ if($format != '') {
 local_js(array(TOTARA_JS_DIALOG, TOTARA_JS_TREEVIEW));
 
 $PAGE->requires->strings_for_js(array('none'), 'moodle');
-$PAGE->requires->strings_for_js(array('deletelearningconfirm', 'savinglearning'), 'totara_cohort');
+$PAGE->requires->strings_for_js(array('assignvisiblelearningcourse', 'assignvisiblelearningprogram',
+                                      'assignvisiblelearningcertification', 'deletelearningconfirm', 'savinglearning'),
+                                      'totara_cohort');
 $jsmodule = array(
         'name' => 'totara_cohortlearning',
         'fullpath' => '/totara/cohort/dialog/learningitem.js',
@@ -111,16 +113,19 @@ if ($canedit) {
 
     if (has_capability('totara/program:configuredetails', context_system::instance())) {
         // Add programs.
-        echo html_writer::start_tag('div', array('class' => 'singlebutton'));
-        echo html_writer::empty_tag('input', array('type' => 'submit', 'id' => 'add-program-learningitem-dialog',
-            'value' => get_string('addprograms', 'totara_cohort')));
-        echo html_writer::end_tag('div');
-
+        if (totara_feature_visible('programs')) {
+            echo html_writer::start_tag('div', array('class' => 'singlebutton'));
+            echo html_writer::empty_tag('input', array('type' => 'submit', 'id' => 'add-program-learningitem-dialog',
+                'value' => get_string('addprograms', 'totara_cohort')));
+            echo html_writer::end_tag('div');
+        }
         // Add certifications.
-        echo html_writer::start_tag('div', array('class' => 'singlebutton'));
-        echo html_writer::empty_tag('input', array('type' => 'submit', 'id' => 'add-certification-learningitem-dialog',
-            'value' => get_string('addcertifications', 'totara_cohort')));
-        echo html_writer::end_tag('div');
+        if (totara_feature_visible('certifications')) {
+            echo html_writer::start_tag('div', array('class' => 'singlebutton'));
+            echo html_writer::empty_tag('input', array('type' => 'submit', 'id' => 'add-certification-learningitem-dialog',
+                'value' => get_string('addcertifications', 'totara_cohort')));
+            echo html_writer::end_tag('div');
+        }
     }
 
     echo html_writer::end_tag('div');

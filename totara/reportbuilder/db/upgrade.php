@@ -673,5 +673,73 @@ function xmldb_totara_reportbuilder_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2014120400, 'totara', 'reportbuilder');
     }
 
+    if ($oldversion < 2015030201) {
+
+        // Define table report_builder_schedule_email_audience.
+        $table = new xmldb_table('report_builder_schedule_email_audience');
+
+        // Adding fields to table report_builder_schedule_email_audience.
+        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+        $table->add_field('scheduleid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('cohortid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+
+        // Adding keys to table report_builder_graph.
+        $table->add_key('primary', XMLDB_KEY_PRIMARY, array('id'));
+        $table->add_key('repobuilscheaud_sch_fk', XMLDB_KEY_FOREIGN, array('scheduleid'), 'report_builder_schedule', array('id'));
+        $table->add_key('repobuilscheaud_aud_fk', XMLDB_KEY_FOREIGN, array('cohortid'), 'cohort', array('id'));
+
+        // Add index.
+        $table->add_index('idx_schedule_aud', XMLDB_INDEX_UNIQUE, array('scheduleid', 'cohortid'));
+
+        // Conditionally launch create table for report_builder_graph.
+        if (!$dbman->table_exists($table)) {
+            $dbman->create_table($table);
+        }
+
+        // Define table report_builder_schedule_email_systemuser.
+        $table = new xmldb_table('report_builder_schedule_email_systemuser');
+
+        // Adding fields to table report_builder_schedule_email_audience.
+        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+        $table->add_field('scheduleid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('userid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+
+        // Adding keys to table report_builder_graph.
+        $table->add_key('primary', XMLDB_KEY_PRIMARY, array('id'));
+        $table->add_key('repobuilschesysuser_sch_fk', XMLDB_KEY_FOREIGN, array('scheduleid'), 'report_builder_schedule', array('id'));
+        $table->add_key('repobuilschesysuser_use_fk', XMLDB_KEY_FOREIGN, array('userid'), 'user', array('id'));
+
+        // Add index.
+        $table->add_index('idx_schedule_sysuser', XMLDB_INDEX_UNIQUE, array('scheduleid', 'userid'));
+
+        // Conditionally launch create table for report_builder_graph.
+        if (!$dbman->table_exists($table)) {
+            $dbman->create_table($table);
+        }
+
+        // Define table report_builder_schedule_email_external.
+        $table = new xmldb_table('report_builder_schedule_email_external');
+
+        // Adding fields to table report_builder_schedule_email_audience.
+        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+        $table->add_field('scheduleid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('email', XMLDB_TYPE_CHAR, '255', null, XMLDB_NOTNULL, null, null);
+
+        // Adding keys to table report_builder_graph.
+        $table->add_key('primary', XMLDB_KEY_PRIMARY, array('id'));
+        $table->add_key('repobuilscheexternaluser_sch_fk', XMLDB_KEY_FOREIGN, array('scheduleid'), 'report_builder_schedule', array('id'));
+
+        // Add index.
+        $table->add_index('idx_schedule_extuser', XMLDB_INDEX_UNIQUE, array('scheduleid', 'email'));
+
+        // Conditionally launch create table for report_builder_graph.
+        if (!$dbman->table_exists($table)) {
+            $dbman->create_table($table);
+        }
+
+        // Reportbuilder savepoint reached.
+        upgrade_plugin_savepoint(true, 2015030201, 'totara', 'reportbuilder');
+    }
+
     return true;
 }

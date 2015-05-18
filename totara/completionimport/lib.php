@@ -403,8 +403,9 @@ function import_data_checks($importname, $importtime) {
     if (in_array($shortnamefield, $columnnames) && in_array($idnumberfield, $columnnames)) {
         // I 'think' the count has to be included in the select even though we only need having count().
         $notemptyidnumber = $DB->sql_isnotempty($tablename, "{{$tablename}}.{$idnumberfield}", true, false);
+        $shortimportname = sql_collation($shortnamefield);
         $sql = "SELECT u.{$idnumberfield}, COUNT(*) AS shortnamecount
-                FROM (SELECT DISTINCT {$shortnamefield}, {$idnumberfield}
+                FROM (SELECT DISTINCT {$shortimportname}, {$idnumberfield}
                         FROM {{$tablename}}
                         {$sqlwhere}
                         AND {$notemptyidnumber}) u
@@ -414,15 +415,38 @@ function import_data_checks($importname, $importtime) {
         $idnumberlist = array_keys($idnumbers);
 
         if (count($idnumberlist)) {
-            list($idsql, $idparams) = $DB->get_in_or_equal($idnumberlist, SQL_PARAMS_NAMED, 'param');
-
-            $params = array_merge($stdparams, $idparams);
-            $params['errorstring'] = 'duplicateidnumber;';
-            $sql = "UPDATE {{$tablename}}
+            foreach ($idnumberlist as $i => $idnumber) {
+                list($idsql, $idparams) = $DB->get_in_or_equal($idnumber, SQL_PARAMS_NAMED, 'param');
+                $params = array_merge($stdparams, $idparams);
+                $where = "{$sqlwhere} AND {$idnumberfield} {$idsql}";
+                $forcecaseinsensitive = get_default_config($pluginname, 'forcecaseinsensitive' . $importname, false);
+                // If case sensitive is enabled, fix shortname matching.
+                if ($forcecaseinsensitive) {
+                    // First try to find the course/certification shortname in course/prog table.
+                    $tblname = $importname == 'course' ? $importname : 'prog';
+                    $sql = "SELECT shortname FROM {{$tblname}} WHERE " . $DB->sql_like('idnumber', str_replace('= ', '', $idsql), false, false);
+                    $record = $DB->get_record_sql($sql, $idparams, IGNORE_MULTIPLE);
+                    if ($record) {
+                        $value = $record->shortname;
+                    } else {
+                        // No records exists, match the shortname from the first record.
+                        $sql = "SELECT {$shortnamefield} FROM {{$tablename}} {$where}";
+                        $record = $DB->get_record_sql($sql, $params, IGNORE_MULTIPLE);
+                        $value = $record->{$shortnamefield};
+                    }
+                    $update = "UPDATE {{$tablename}}
+                        SET {$shortnamefield} = :{$shortnamefield}
+                        {$where}";
+                    $whereparams = array_merge($params, array($shortnamefield => $value));
+                    $DB->execute($update, $whereparams);
+                } else {
+                    $params['errorstring'] = 'duplicateidnumber;';
+                    $sql = "UPDATE {{$tablename}}
                     SET importerrormsg = " . $DB->sql_concat('importerrormsg', ':errorstring') . "
-                    {$sqlwhere}
-                    AND {$idnumberfield} {$idsql}";
-            $DB->execute($sql, $params);
+                    {$where}";
+                    $DB->execute($sql, $params);
+                }
+            }
         }
     }
 
@@ -969,6 +993,8 @@ function import_certification($importname, $importtime) {
     $programid = 0;
     $programs = $DB->get_recordset_sql($sql, $params);
 
+    $now = time();
+
     if ($programs->valid()) {
         foreach ($programs as $program) {
             if (empty($programid) || ($programid != $program->progid) || (($insertcount++ % BATCH_INSERT_MAX_ROW_COUNT) == 0)) {
@@ -1036,8 +1062,6 @@ function import_certification($importname, $importtime) {
                 SET importerrormsg = " . $DB->sql_concat('importerrormsg', ':errorstring') . ",
                     importerror = :importerror
                     WHERE id = :importid";
-
-            $now = time();
 
             // Do recert times.
             $timecompleted = totara_date_parse_from_format($csvdateformat, $program->completiondate);
@@ -1139,7 +1163,7 @@ function import_certification($importname, $importtime) {
             $pcdata->coursesetid = 0;
             $pcdata->status = STATUS_PROGRAM_COMPLETE; // Assume complete.
             $pcdata->timestarted = $timecompleted;
-            $pcdata->timedue = $timecompleted;
+            $pcdata->timedue = $ccdata->timeexpires;
             $pcdata->timecompleted = $timecompleted;
 
             if (empty($program->pcid)) {
@@ -1246,6 +1270,24 @@ function import_certification($importname, $importtime) {
         unset($updateids);
         $updateids = array();
     }
+
+    // Copy the timeexpires of new/replaced certif_completion records to their matching prog_completion timedue.
+    $sql = "UPDATE {prog_completion}
+               SET timedue = (SELECT cc.timeexpires
+                                FROM {certif_completion} cc
+                                JOIN {prog} prog
+                                  ON prog.certifid = cc.certifid
+                               WHERE {prog_completion}.programid = prog.id
+                                 AND {prog_completion}.userid = cc.userid)
+             WHERE coursesetid = 0
+               AND EXISTS (SELECT 1
+                             FROM {certif_completion} cc
+                             JOIN {prog} prog
+                               ON prog.certifid = cc.certifid
+                            WHERE {prog_completion}.programid = prog.id
+                              AND {prog_completion}.userid = cc.userid
+                              AND cc.timemodified = :now)";
+    $DB->execute($sql, array('now' => $now));
 
     return $errors;
 }
@@ -1376,6 +1418,8 @@ function set_config_data($data, $importname) {
     set_config('csvencoding', $data->csvencoding, $pluginname);
     $overridesetting = 'overrideactive' . $importname;
     set_config('overrideactive' . $importname, $data->$overridesetting, $pluginname);
+    $forcecaseinsensitive = 'forcecaseinsensitive' . $importname;
+    set_config('forcecaseinsensitive' . $importname, $data->$forcecaseinsensitive, $pluginname);
 }
 
 /**

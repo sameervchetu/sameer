@@ -98,7 +98,12 @@ abstract class totara_sync_hierarchy extends totara_sync_element {
 
         $rs = $DB->get_recordset_sql($sql);
 
+        $source = $this->get_sources();
+        $source = $source['csv'];
         foreach ($rs as $item) {
+            if ($source->get_config('import_typeidnumber') == '0') {
+                unset($item->typeidnumber);
+            }
             $this->sync_item($item, $synctable);
         }
         $rs->close();
@@ -173,7 +178,11 @@ abstract class totara_sync_hierarchy extends totara_sync_element {
         }
         $newitem->parentid = !empty($parentid) ? $parentid : 0;
 
-        $newitem->typeid = !empty($newitem->typeidnumber) ? $DB->get_field($elname.'_type', 'id', array('idnumber' => $newitem->typeidnumber)) : 0;
+        if (isset($newitem->typeidnumber)) {
+            $newitem->typeid = !empty($newitem->typeidnumber) ? $DB->get_field($elname.'_type', 'id', array('idnumber' => $newitem->typeidnumber)) : 0;
+        } else {
+            unset($newitem->typeid);
+        }
 
         // Unset the *idnumbers, since we now have the ids ;)
         unset($newitem->frameworkidnumber, $newitem->parentidnumber, $newitem->typeidnumber);
@@ -199,7 +208,7 @@ abstract class totara_sync_hierarchy extends totara_sync_element {
                 foreach ($customfields as $name=>$value) {
                     $hitem->{$name} = $value;
                 }
-                customfield_save_data($hitem, $this->hierarchy->prefix, $this->hierarchy->shortprefix.'_type');
+                customfield_save_data($hitem, $this->hierarchy->prefix, $this->hierarchy->shortprefix.'_type', true);
             }
 
             $this->addlog(get_string('createdx', 'tool_totara_sync', "{$elname} {$hitem->idnumber}"), 'info', 'syncitem');
@@ -229,17 +238,17 @@ abstract class totara_sync_hierarchy extends totara_sync_element {
         }
 
         // Sync custom fields
-        if ($newitem->typeid != $dbitem->typeid) {
+        if (isset($newitem->typeid) && $newitem->typeid != $dbitem->typeid) {
             // Remove old custom field data
             $this->hierarchy->delete_custom_field_data($dbitem->id);
         }
-        if (!empty($newitem->typeid)) {
+        if (isset($newitem->typeid) && !empty($newitem->typeid)) {
             // Add/update custom field data
             if ($newcustomfields = json_decode($newitem->customfields)) {
                 foreach ($newcustomfields as $name=>$value) {
                     $newitem->{$name} = $value;
                 }
-                customfield_save_data($newitem, $this->hierarchy->prefix, $this->hierarchy->shortprefix.'_type');
+                customfield_save_data($newitem, $this->hierarchy->prefix, $this->hierarchy->shortprefix.'_type', true);
             }
         }
 

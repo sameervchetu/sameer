@@ -5,7 +5,8 @@ Feature: Users can auto-enrol themself via course catalog in courses where self 
   I need to auto enrol me in courses
 
   Background:
-    Given I log in as "admin"
+    Given I am on a totara site
+    And I log in as "admin"
     And I set the following administration settings values:
       | Enhanced catalog | 1 |
     And I press "Save changes"

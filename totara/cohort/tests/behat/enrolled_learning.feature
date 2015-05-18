@@ -1,11 +1,12 @@
-@totara_cohort
+@totara_cohort @totara
 Feature: Assign enrolled learning to cohort
   In order to efficiently control enrolments to learning items
   As an admin
   I need to assign courses, programs and certifications to an audience
 
   Background:
-    Given the following "cohorts" exist:
+    Given I am on a totara site
+    And the following "cohorts" exist:
         | name | idnumber |
         | Cohort 1 | ASD |
         | Cohort 2 | DSA |

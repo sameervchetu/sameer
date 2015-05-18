@@ -56,7 +56,7 @@ $scale_used = dp_priority_scale_is_used($id);
 
 // Delete logic
 if ($delete) {
-    if (!$value = $DB->get_record('dp_priority_scale_value', array('id' => $delete))) {
+    if (!$value = $DB->get_record('dp_priority_scale_value', array('id' => $delete, 'priorityscaleid' => $priority->id))) {
         print_error('error:invalidpriorityscalevalueid', 'totara_plan');
     }
     if ($scale_used) {
@@ -79,7 +79,10 @@ if ($delete) {
         $DB->execute($sql, array($priority->id, $value->sortorder));
 
         $transaction->allow_commit();
+
+        \totara_plan\event\priority_scale_updated::create_from_scale($priority)->trigger();
         totara_set_notification(get_string('deletedpriorityscalevalue', 'totara_plan', format_string($value->name)), $CFG->wwwroot.'/totara/plan/priorityscales/view.php?id='.$priority->id, array('class' => 'notifysuccess'));
+
     } else {
         $returnurl = new moodle_url('/totara/plan/priorityscales/view.php', array('id' => $priority->id));
         $deleteurl = new moodle_url('/totara/plan/priorityscales/view.php', array('id' => $priority->id, 'delete' => $delete, 'confirm' => '1', 'sesskey' => sesskey()));

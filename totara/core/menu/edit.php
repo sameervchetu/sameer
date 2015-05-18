@@ -49,14 +49,20 @@ if ($mform->is_cancelled()) {
 }
 if ($data = $mform->get_data()) {
     try {
+        $redirect = new moodle_url('/totara/core/menu/index.php', array());
         if ((int)$id > 0) {
             $item->update($data);
         } else {
             $item = $item->create($data);
+
+            if ($data->visibility == \totara_core\totara\menu\menu::SHOW_CUSTOM) {
+                // Redirect to the visibility settings page so they can set the visibility rules.
+                $redirect = new moodle_url('/totara/core/menu/rules.php', array('id' => $item->id));
+            }
         }
+
         totara_set_notification(get_string('menuitem:updatesuccess', 'totara_core'),
-            new moodle_url('/totara/core/menu/edit.php', array('id' => $item->id)),
-            array('class' => 'notifysuccess'));
+            $redirect, array('class' => 'notifysuccess'));
     } catch (moodle_exception $e) {
         totara_set_notification($e->getMessage());
     }

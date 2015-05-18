@@ -7,7 +7,8 @@ Feature: Test Totara dialogue operation
 
   @javascript
   Scenario: I can open and close a Totara dialogue using its title
-    Given the following "courses" exist:
+    Given I am on a totara site
+    And the following "courses" exist:
       | fullname | shortname | summary | format |
       | Course 1 | C1 | <p>Course summary</p> | topics |
     And the following "cohorts" exist:
@@ -25,7 +26,8 @@ Feature: Test Totara dialogue operation
 
   @javascript
   Scenario: I can open and close a Totara dialogue using its id
-    Given the following "courses" exist:
+    Given I am on a totara site
+    And the following "courses" exist:
       | fullname | shortname | summary | format |
       | Course 1 | C1 | <p>Course summary</p> | topics |
     And the following "cohorts" exist:

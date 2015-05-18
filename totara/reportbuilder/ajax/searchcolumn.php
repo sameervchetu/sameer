@@ -36,7 +36,7 @@ $reportid = required_param('id', PARAM_INT);
 
 switch ($action) {
     case 'add':
-        $searchcolumn = required_param('searchcolumn', PARAM_TEXT);
+        $searchcolumn = required_param('searchcolumn', PARAM_ALPHANUMEXT);
 
         $searchcolumn = explode('-', $searchcolumn);
         $searchcolumntype = $searchcolumn[0];

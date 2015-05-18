@@ -158,49 +158,30 @@ if ($data = $form->get_data()) {
 
     if (isset($data->savechanges)) {
 
+        $availablefrom = ($data->availablefrom) ? $data->availablefrom : 0;
+        $availableuntil = ($data->availableuntil) ? $data->availableuntil : 0;
+
         $program_todb = new stdClass;
-
-        $program_todb->availablefrom = ($data->availablefrom) ? $data->availablefrom : 0;
-        $program_todb->availableuntil = ($data->availableuntil) ? $data->availableuntil : 0;
-        $available = prog_check_availability($program_todb->availablefrom, $program_todb->availableuntil);
-
-        //Calcuate sortorder
-        $sortorder = $DB->get_field('prog', 'MAX(sortorder) + 1', array());
-
-        $now = time();
-        $program_todb->timecreated = $now;
-        $program_todb->timemodified = $now;
-        $program_todb->usermodified = $USER->id;
         $program_todb->category = $data->category;
         $program_todb->shortname = $data->shortname;
         $program_todb->fullname = $data->fullname;
         $program_todb->idnumber = $data->idnumber;
-        $program_todb->sortorder = !empty($sortorder) ? $sortorder : 0;
         $program_todb->icon = $data->icon;
-        $program_todb->exceptionssent = 0;
-        $program_todb->available = $available;
+        $program_todb->availablefrom = $availablefrom;
+        $program_todb->availableuntil = $availableuntil;
         if (isset($data->visible)) {
             $program_todb->visible = $data->visible;
         }
         if (isset($data->audiencevisible)) {
             $program_todb->audiencevisible = $data->audiencevisible;
         }
-        // Text editor fields will be updated later.
-        $program_todb->summary = '';
-        $program_todb->endnote ='';
-        $newid = 0;
 
-        $transaction = $DB->start_delegated_transaction();
-        // Set up the program
-        $newid = $DB->insert_record('prog', $program_todb);
-        $program = new program($newid);
-        $transaction->allow_commit();
+        // Set up the new program.
+        $program = program::create($program_todb);
+        $newid = $program->id;
 
         $data->id = $newid;
         customfield_save_data($data, 'program', 'prog');
-
-        // Create message manager to add default messages.
-        $messagemanager = new prog_messages_manager($newid, true);
 
         $editoroptions = $TEXTAREA_OPTIONS;
         $editoroptions['context'] = context_program::instance($newid);

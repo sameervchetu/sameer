@@ -267,9 +267,11 @@ class dp_competency_component extends dp_base_component {
             if (!confirm_sesskey()) {
                 totara_set_notification(get_string('confirmsesskeybad', 'error'), $currenturl);
             }
+            $sql = "SELECT c.id, c.fullname FROM {comp} c INNER JOIN {dp_plan_competency_assign} ca ON ca.competencyid = c.id WHERE ca.id = ?";
+            $component = $DB->get_record_sql($sql, array($delete));
             if ($this->remove_competency_assignment($delete)) {
-                add_to_log(SITEID, 'plan', 'removed competency', "component.php?id={$this->plan->id}&c=competency", "Competency (ID:{$delete})");
-
+                \totara_plan\event\component_deleted::create_from_component(
+                    $this->plan, 'competency', $component->id, $component->fullname)->trigger();
                 $dropcourselist = optional_param_array('dropcourse', array(), PARAM_INT);
                 if ($dropcourselist) {
                     if (!is_array($dropcourselist)) {
@@ -277,8 +279,10 @@ class dp_competency_component extends dp_base_component {
                     }
                     $coursecomponent = $this->plan->get_component('course');
                     foreach ($dropcourselist as $courseid) {
-                        add_to_log(SITEID, 'plan', 'removed course', "component.php?id={$this->plan->id}&c=course", "Course (ID:{$courseid}) via Competency {$delete}");
-                        $coursecomponent->unassign_item($coursecomponent->get_assignment($courseid));
+                        $courseassignment = $coursecomponent->get_assignment($courseid);
+                        $coursecomponent->unassign_item($courseassignment);
+                        \totara_plan\event\component_deleted::create_from_component(
+                            $this->plan, 'course', $courseid, $DB->get_field('course', 'fullname', array('id' => $courseid)))->trigger();
                     }
                 }
 
@@ -1060,6 +1064,7 @@ class dp_competency_component extends dp_base_component {
                             get_string('changedfromxtoy', 'totara_plan', (object)array('before' => dp_get_approval_status_from_code($oldrecords[$itemid]->approved),
                             'after' => dp_get_approval_status_from_code($record->approved))).html_writer::empty_tag('br');
                         $approval->text = $text;
+                        $approval->itemid = $competency->id;
                         $approval->itemname = format_string($competency->fullname);
                         $approval->before = $oldrecords[$itemid]->approved;
                         $approval->after = $record->approved;
@@ -1085,9 +1090,13 @@ class dp_competency_component extends dp_base_component {
                 if ($this->plan->status != DP_PLAN_STATUS_UNAPPROVED && count($approvals)>0) {
                     foreach ($approvals as $approval) {
                         $this->send_component_approval_alert($approval);
-
-                        $action = ($approval->after == DP_APPROVAL_APPROVED) ? 'approved' : 'declined';
-                        add_to_log(SITEID, 'plan', "{$action} competency", "component.php?id={$this->plan->id}&amp;c=competency", $approval->itemname);
+                        if ($approval->after == DP_APPROVAL_APPROVED) {
+                            \totara_plan\event\approval_approved::create_from_component(
+                                $this->plan, 'competency', $approval->itemid, $approval->itemname)->trigger();
+                        } else {
+                            \totara_plan\event\approval_declined::create_from_component(
+                                $this->plan, 'competency', $approval->itemid, $approval->itemname)->trigger();
+                        }
                     }
                 }
             }
@@ -1229,20 +1238,18 @@ class dp_competency_component extends dp_base_component {
         // Load fullname of item
         $item->fullname = $DB->get_field('comp', 'fullname', array('id' => $itemid));
 
-        add_to_log(SITEID, 'plan', 'added competency', "component.php?id={$this->plan->id}&amp;c=competency", "Competency ID: {$itemid}");
+        $item->id = $DB->insert_record('dp_plan_competency_assign', $item);
 
-        if ($result = $DB->insert_record('dp_plan_competency_assign', $item)) {
-            $item->id = $result;
+        \totara_plan\event\component_created::create_from_component($this->plan, 'competency', $itemid, $item->fullname)->trigger();
 
-            // Check if we are auto marking competencies with default evidence values
-            if ($this->get_setting('autoadddefaultevidence')) {
-                if ($result && $item->approved == DP_APPROVAL_APPROVED && $this->plan->status == DP_PLAN_STATUS_APPROVED) {
-                    plan_mark_competency_default($item->competencyid, $this->plan->userid, $this);
-                }
+        // Check if we are auto marking competencies with default evidence values
+        if ($this->get_setting('autoadddefaultevidence')) {
+            if ($item->approved == DP_APPROVAL_APPROVED && $this->plan->status == DP_PLAN_STATUS_APPROVED) {
+                plan_mark_competency_default($item->competencyid, $this->plan->userid, $this);
             }
         }
 
-        return $result ? $item : $result;
+        return $item;
     }
 
 

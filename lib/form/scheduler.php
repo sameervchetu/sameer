@@ -69,35 +69,53 @@ class MoodleQuickForm_scheduler extends MoodleQuickForm_group {
      */
     function _createElements() {
         global $USER;
+
         $CALENDARDAYS = calendar_get_days();
-        //Schedule type options
+
+        // Schedule type options.
         $frequencyselect = array();
         foreach (scheduler::get_options() as $option => $code) {
-            $frequencyselect[$code] = get_string('schedule' . $option, 'totara_reportbuilder');
+            $frequencyselect[$code] = get_string('schedule' . $option, 'totara_core');
         }
 
-        //Daily selector
+        // Minutely selector.
+        $minutelyselect = array();
+        foreach (array(1, 2, 3, 4, 5, 10, 15, 20, 30) as $i) { // Divide evenly into an hour, skipped 6 and 12.
+            $minutelyselect[$i] = $i;
+        }
+
+        // Hourly selector.
+        $hourlyselect = array();
+        foreach (array(1, 2, 3, 4, 6, 8, 12) as $i) { // Divide evenly into a day.
+            $hourlyselect[$i] = $i;
+        }
+
+        // Daily selector.
         $dailyselect = array();
         for ($i = 0; $i < 24; $i++) {
             $dailyselect[$i] = date('H:i', mktime($i, 0, 0));
         }
 
-        //Weekly selector
+        // Weekly selector.
         $weeklyselect = array();
         for ($i = 0; $i < 7; $i++) {
             $weeklyselect[$i] = $CALENDARDAYS[$i]['fullname'];
         }
 
+        // Monthly selector.
         $monthlyselect = array();
         $dateformat = ($USER->lang == 'en') ? 'jS' : 'j';
         for ($i = 1; $i <= 31; $i++) {
             $monthlyselect[$i] = date($dateformat, mktime(0, 0, 0, 0, $i));
         }
+
         $this->_elements = array();
-        $this->_elements['frequency'] = @MoodleQuickForm::createElement('select', 'frequency', get_string('schedule', 'totara_reportbuilder'), $frequencyselect);
+        $this->_elements['frequency'] = @MoodleQuickForm::createElement('select', 'frequency', get_string('schedule', 'totara_core'), $frequencyselect);
         $this->_elements['daily'] = @MoodleQuickForm::createElement('select', 'daily', null, $dailyselect);
         $this->_elements['weekly'] = @MoodleQuickForm::createElement('select', 'weekly', null, $weeklyselect);
         $this->_elements['monthly'] = @MoodleQuickForm::createElement('select', 'monthly', null, $monthlyselect);
+        $this->_elements['hourly'] = @MoodleQuickForm::createElement('select', 'hourly', null, $hourlyselect);
+        $this->_elements['minutely'] = @MoodleQuickForm::createElement('select', 'minutely', null, $minutelyselect);
     }
 
     /**
@@ -131,6 +149,8 @@ class MoodleQuickForm_scheduler extends MoodleQuickForm_group {
                 }
                 break;
             case 'createElement':
+                $caller->disabledIf($arg[0] . '[minutely]', $arg[0] . '[frequency]', 'neq', $scheduler_options['minutely']);
+                $caller->disabledIf($arg[0] . '[hourly]', $arg[0] . '[frequency]', 'neq', $scheduler_options['hourly']);
                 $caller->disabledIf($arg[0] . '[daily]', $arg[0] . '[frequency]', 'neq', $scheduler_options['daily']);
                 $caller->disabledIf($arg[0] . '[weekly]', $arg[0] . '[frequency]', 'neq', $scheduler_options['weekly']);
                 $caller->disabledIf($arg[0] . '[monthly]', $arg[0] . '[frequency]', 'neq', $scheduler_options['monthly']);
@@ -156,7 +176,7 @@ class MoodleQuickForm_scheduler extends MoodleQuickForm_group {
         }
         $elementname = $this->getName();
         $fields = array('frequency' => null, 'schedule' => null, 'daily' => null, 'weekly' => null,
-            'monthly' => null);
+            'monthly' => null, 'hourly' => null, 'minutely' => null);
         foreach ($fields as $key => $field) {
             if (isset($values[$elementname][$key])) {
                 $fields[$key] = $values[$elementname][$key];
@@ -170,6 +190,14 @@ class MoodleQuickForm_scheduler extends MoodleQuickForm_group {
             return null;
         }
         switch ($fields['frequency']) {
+            case scheduler::MINUTELY:
+                $name = 'minutely';
+                $schedule = (isset($fields['schedule'])) ? $fields['schedule'] : $fields['minutely'];
+                break;
+            case scheduler::HOURLY:
+                $name = 'hourly';
+                $schedule = (isset($fields['schedule'])) ? $fields['schedule'] : $fields['hourly'];
+                break;
             case scheduler::DAILY:
                 $name = 'daily';
                 $schedule = (isset($fields['schedule'])) ? $fields['schedule'] : $fields['daily'];
@@ -229,6 +257,12 @@ class MoodleQuickForm_scheduler extends MoodleQuickForm_group {
         $value['schedule'] = 0;
 
         switch ($value['frequency']) {
+            case scheduler::MINUTELY:
+                $value['schedule'] = $this->_elements['minutely']->exportValue($submitValues[$this->getName()], false);
+                break;
+            case scheduler::HOURLY:
+                $value['schedule'] = $this->_elements['hourly']->exportValue($submitValues[$this->getName()], false);
+                break;
             case scheduler::DAILY:
                 $value['schedule'] = $this->_elements['daily']->exportValue($submitValues[$this->getName()], false);
                 break;

@@ -113,18 +113,21 @@ if ($valueform->is_cancelled()) {
         unset($valuenew->id);
 
         $valuenew->id = $DB->insert_record('dp_priority_scale_value', $valuenew);
-        // Log
-        add_to_log(SITEID, 'priorityscales', 'scale value added', "view.php?id={$valuenew->priorityscaleid}");
+        $valuenew = file_postupdate_standard_editor($valuenew, 'description', $TEXTAREA_OPTIONS, $TEXTAREA_OPTIONS['context'], 'totara_plan', 'dp_priority_scale_value', $valuenew->id);
+        $DB->update_record('dp_priority_scale_value', $valuenew);
+
         $notification = get_string('priorityscalevalueadded', 'totara_plan', format_string($valuenew->name));
+
     } else {
         // Updating priority scale value
+        $valuenew = file_postupdate_standard_editor($valuenew, 'description', $TEXTAREA_OPTIONS, $TEXTAREA_OPTIONS['context'], 'totara_plan', 'dp_priority_scale_value', $valuenew->id);
         $DB->update_record('dp_priority_scale_value', $valuenew);
-        // Log
-        add_to_log(SITEID, 'priorityscales', 'scale value updated', "view.php?id={$valuenew->priorityscaleid}");
+
         $notification = get_string('priorityscalevalueupdated', 'totara_plan', format_string($valuenew->name));
     }
-    $valuenew = file_postupdate_standard_editor($valuenew, 'description', $TEXTAREA_OPTIONS, $TEXTAREA_OPTIONS['context'], 'totara_plan', 'dp_priority_scale_value', $valuenew->id);
-    $DB->set_field('dp_priority_scale_value', 'description', $valuenew->description, array('id' => $valuenew->id));
+
+    \totara_plan\event\priority_scale_updated::create_from_scale($scale)->trigger();
+
     totara_set_notification($notification,
                             "$CFG->wwwroot/totara/plan/priorityscales/view.php?id={$valuenew->priorityscaleid}",
                             array('class' => 'notifysuccess'));

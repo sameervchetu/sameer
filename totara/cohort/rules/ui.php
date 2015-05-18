@@ -1246,7 +1246,7 @@ class cohort_rule_ui_picker_course_allanynotallnone extends cohort_rule_ui_picke
         };
 
         $paramseparator = html_writer::tag('span', ', ', array('class' => 'ruleparamseparator'));
-        $strvar->vars .= implode($paramseparator, $courselist);
+        $strvar->vars = implode($paramseparator, $courselist);
 
         return get_string('ruleformat-descvars', 'totara_cohort', $strvar);
     }

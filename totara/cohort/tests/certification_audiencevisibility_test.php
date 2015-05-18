@@ -359,18 +359,31 @@ class totara_cohort_certification_audiencevisibility_testcase extends reportcach
      * Create programs with available fields.
      */
     protected function create_certifications_with_availability() {
+        global $DB;
+
         // Create programs based on available fields.
         $today = time();
-        $from = $today - (5 * DAYSECS);
-        $until = $today - DAYSECS;
-        $paramsprogram7 = array('fullname' => 'certif7', 'summary' => '', 'available' => 0);
-        $paramsprogram8 = array('fullname' => 'certif8', 'summary' => '', 'available' => 1, 'availablefrom' => $from,
-                                'availableuntil' => $until );
-        $paramsprogram9 = array('fullname' => 'certif9', 'summary' => '', 'available' => 1, 'availablefrom' => $from,
-                                'availableuntil' => $today + DAYSECS );
-        $this->certif7 = $this->getDataGenerator()->create_program($paramsprogram7); // Not available (Just admin).
-        $this->certif8 = $this->getDataGenerator()->create_program($paramsprogram8); // Available for students(until yesterday).
-        $this->certif9 = $this->getDataGenerator()->create_program($paramsprogram9); // Available for students(until tomorrow).
+        $earlier = $today - (5 * DAYSECS);
+        $yesterday = $today - DAYSECS;
+        $tomorrow = $today + DAYSECS;
+
+        // Not available (just admin), because it is past the available window.
+        $paramsprogram7 = array('fullname' => 'certif7', 'summary' => '', 'availablefrom' => $earlier,
+                                'availableuntil' => $yesterday);
+        // Available to students until yesterday, but available flag hasn't been processed on cron yet (see below).
+        $paramsprogram8 = array('fullname' => 'certif8', 'summary' => '', 'availablefrom' => $earlier,
+                                'availableuntil' => $yesterday );
+        // Available to students until tomorrow.
+        $paramsprogram9 = array('fullname' => 'certif9', 'summary' => '', 'availablefrom' => $earlier,
+                                'availableuntil' => $tomorrow );
+        $this->certif7 = $this->getDataGenerator()->create_program($paramsprogram7);
+        $this->certif8 = $this->getDataGenerator()->create_program($paramsprogram8);
+        $this->certif9 = $this->getDataGenerator()->create_program($paramsprogram9);
+
+        // For certif8, since we want to simulate the situation where cron has not yet changed the available flag from
+        // available to not available, we need to manually change it to available (since it was automatically calculated
+        // as unavailable when created, due to the actual date being outside the given from-until).
+        $DB->set_field('prog', 'available', AVAILABILITY_TO_STUDENTS, array('id' => $this->certif8->id));
 
         // Convert these programs in certifications.
         list($actperiod, $winperiod, $recerttype) = $this->program_generator->get_random_certification_setting();

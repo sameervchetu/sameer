@@ -210,7 +210,7 @@ class profile_field_base {
      */
     public function edit_field_set_required($mform) {
         global $USER;
-        if ($this->is_required() && ($this->userid == $USER->id)) {
+        if ($this->is_required() && ($this->userid == $USER->id || isguestuser())) {
             $mform->addRule($this->inputname, get_string('required'), 'required', null, 'client');
         }
     }
@@ -634,8 +634,14 @@ function profile_signup_fields($mform) {
     }
 }
 
-function profile_signup_position($mform, $nojs) {
+function profile_signup_position($mform, $nojs, $positionid = 0) {
     global $DB;
+
+    // Get the position title.
+    $positiontitle = '';
+    if ($positionid) {
+        $positiontitle = $DB->get_field('pos', 'fullname', array('id' => $positionid));
+    }
 
     // Position details.
     if ($nojs) {
@@ -648,8 +654,9 @@ function profile_signup_position($mform, $nojs) {
         }
         $mform->addHelpButton('positionid', 'chooseposition', 'totara_hierarchy');
     } else {
+        $class = strlen($positiontitle) ? 'nonempty' : '';
         $mform->addElement('static', 'positionselector', get_string('position', 'totara_hierarchy'),
-            html_writer::tag('span', '', array('class' => '', 'id' => 'positiontitle')).
+            html_writer::tag('span', $positiontitle, array('class' => $class, 'id' => 'positiontitle')).
             html_writer::empty_tag('input', array('type' => 'button', 'value' => get_string('chooseposition', 'totara_hierarchy'), 'id' => 'show-position-dialog'))
         );
         $mform->addElement('hidden', 'positionid');
@@ -659,8 +666,14 @@ function profile_signup_position($mform, $nojs) {
     }
 }
 
-function profile_signup_organisation($mform, $nojs) {
+function profile_signup_organisation($mform, $nojs, $organisationid = 0) {
     global $DB;
+
+    // Get the organisation title.
+    $organisationtitle = '';
+    if ($organisationid) {
+        $organisationtitle = $DB->get_field('org', 'fullname', array('id' => $organisationid));
+    }
 
     // Organisation details.
     if ($nojs) {
@@ -673,8 +686,9 @@ function profile_signup_organisation($mform, $nojs) {
         }
         $mform->addHelpButton('organisationid', 'chooseorganisation', 'totara_hierarchy');
     } else {
+        $class = strlen($organisationtitle) ? 'nonempty' : '';
         $mform->addElement('static', 'organisationselector', get_string('organisation', 'totara_hierarchy'),
-            html_writer::tag('span', '', array('class' => '', 'id' => 'organisationtitle')) .
+            html_writer::tag('span', $organisationtitle, array('class' => $class, 'id' => 'organisationtitle')) .
             html_writer::empty_tag('input', array('type' => 'button', 'value' => get_string('chooseorganisation', 'totara_hierarchy'), 'id' => 'show-organisation-dialog'))
         );
 
@@ -685,8 +699,18 @@ function profile_signup_organisation($mform, $nojs) {
     }
 }
 
-function profile_signup_manager($mform, $nojs) {
+function profile_signup_manager($mform, $nojs, $managerid = 0) {
     global $DB;
+
+    // Get the managers name.
+    $managername = '';
+    if ($managerid) {
+        // Get the fields required to display the name of a user.
+        $usernamefields = get_all_user_name_fields(true);
+        $manager = $DB->get_record('user', array('id' => $managerid), $usernamefields);
+        // Get the manager name.
+        $managername = fullname($manager);
+    }
 
     // Manager details.
     if ($nojs) {
@@ -711,12 +735,13 @@ function profile_signup_manager($mform, $nojs) {
         }
         $mform->addHelpButton('managerid', 'choosemanager', 'totara_hierarchy');
     } else {
+        $class = strlen($managername) ? 'nonempty' : '';
         // Show manager
         $mform->addElement(
             'static',
             'managerselector',
             get_string('manager', 'totara_hierarchy'),
-            html_writer::tag('span', '', array('class' => '', 'id' => 'managertitle')) .
+            html_writer::tag('span', $managername, array('class' => $class, 'id' => 'managertitle')) .
             html_writer::empty_tag('input', array('type' => 'button', 'value' => get_string('choosemanager', 'totara_hierarchy'), 'id' => 'show-manager-dialog'))
         );
 

@@ -111,10 +111,10 @@ $objective->descriptionformat = FORMAT_HTML;
 $objective = file_prepare_standard_editor($objective, 'description', $TEXTAREA_OPTIONS, $TEXTAREA_OPTIONS['context'],
                                           'totara_plan', 'dp_plan_objective', $objective->itemid);
 $mform = $component->objective_form($objectiveid);
+$mform->set_data($objective);
 if (isset($objective->duedate)) {
     $objective->duedate = userdate($objective->duedate, get_string('datepickerlongyearphpuserdate', 'totara_core'), $CFG->timezone, false);
 }
-$mform->set_data($objective);
 
 if ($deleteyes) {
     require_sesskey();
@@ -146,23 +146,32 @@ if ($deleteyes) {
         );
         if (!$result) {
             print_error('error:objectiveupdated', 'totara_plan');
-        } else {
-            $data->itemid = $result;
-            $notification = get_string('objectivecreated', 'totara_plan');
-            add_to_log(SITEID, 'plan', 'created objective', "component.php?id={$planid}&amp;c=objective", $data->fullname);
         }
+        $data->itemid = $result;
+        $notification = get_string('objectivecreated', 'totara_plan');
+
+        $data = file_postupdate_standard_editor($data, 'description', $TEXTAREA_OPTIONS, $TEXTAREA_OPTIONS['context'], 'totara_plan', 'dp_plan_objective', $data->itemid);
+        $DB->set_field('dp_plan_objective', 'description', $data->description, array('id' => $data->itemid));
+
+        \totara_plan\event\component_created::create_from_component($plan, 'objective', $data->itemid, $data->fullname)->trigger();
+
     } else {
+        $data = file_postupdate_standard_editor($data, 'description', $TEXTAREA_OPTIONS, $TEXTAREA_OPTIONS['context'], 'totara_plan', 'dp_plan_objective', $data->itemid);
+
         $record = new stdClass();
         $record->id = $data->itemid;
         $record->planid = $data->id;
         $record->fullname = $data->fullname;
-        $record->description = ''; //handled later
+        $record->description = $data->description;
         $record->priority = isset($data->priority)?$data->priority:null;
         $record->duedate = !empty($data->duedate)? totara_date_parse_from_format(get_string('datepickerlongyearparseformat', 'totara_core'), $data->duedate):null;
         $record->scalevalueid = $data->scalevalueid;
         $record->approved = $component->approval_status_after_update();
 
         $DB->update_record('dp_plan_objective', $record);
+
+        \totara_plan\event\component_updated::create_from_component($plan, 'objective', $record->id, $record->fullname)->trigger();
+
         // Only send notificaitons when plan not draft
         if ($plan->status != DP_PLAN_STATUS_UNAPPROVED) {
             // Check for changes and send alerts accordingly
@@ -182,11 +191,8 @@ if ($deleteyes) {
                 $component->send_status_alert($record);
             }
         }
-        add_to_log(SITEID, 'plan', 'updated objective', "component.php?id={$record->planid}&amp;c=objective", $record->fullname);
         $notification = get_string('objectiveupdated', 'totara_plan');
     }
-    $data = file_postupdate_standard_editor($data, 'description', $TEXTAREA_OPTIONS, $TEXTAREA_OPTIONS['context'], 'totara_plan', 'dp_plan_objective', $data->itemid);
-    $DB->set_field('dp_plan_objective', 'description', $data->description, array('id' => $data->itemid));
     totara_set_notification($notification, $objviewurl, array('class' => 'notifysuccess'));
 }
 

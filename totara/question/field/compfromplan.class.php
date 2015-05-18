@@ -229,11 +229,6 @@ class question_compfromplan extends reviewrating {
         $componentname = 'competency';
         $component = $plan->get_component($componentname);
 
-        // Log it.
-        add_to_log(SITEID, 'plan', 'competency proficiency updated',
-                "update-competency-setting.php?competencyid={$compassign->competencyid}&prof={$scalevalueid}&planid={$plan->id}",
-                'ajax');
-
         // Update the competency evidence.
         $details = new stdClass();
         $posrec = $DB->get_record('pos_assignment', array('userid' => $this->subjectid, 'type' => POSITION_TYPE_PRIMARY),
@@ -247,6 +242,11 @@ class question_compfromplan extends reviewrating {
         $details->assessorid = $USER->id;
 
         hierarchy_add_competency_evidence($compassign->competencyid, $this->subjectid, $scalevalueid, $component, $details);
+
+        // Log it.
+        $competencyname = $DB->get_field('comp', 'fullname', array('id' => $compassign->competencyid));
+        \totara_plan\event\component_updated::create_from_component(
+            $plan, 'competencyproficiency', $compassign->competencyid, $competencyname)->trigger();
     }
 
     /**

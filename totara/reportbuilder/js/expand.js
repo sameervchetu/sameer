@@ -98,6 +98,12 @@ M.totara_reportbuilder_expand = M.totara_reportbuilder_expand || {
                 window.location = redirect.attr('value');
                 return;
             }
+            if (data === 'success') {
+                $('.rb-expand-row').remove();
+                // Close and re-expand to refresh contents.
+                $('.rb-display-table-container div').attr({clicked: null});
+                that.trigger( "click" );
+            }
 
             // Remove any existing expanded contents.
             $('.rb-expand-row').remove();

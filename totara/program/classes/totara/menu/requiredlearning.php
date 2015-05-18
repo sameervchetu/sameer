@@ -28,20 +28,44 @@ namespace totara_program\totara\menu;
 
 use \totara_core\totara\menu\menu as menu;
 
+/**
+ * Class to store, render and manage the Required Learning Node
+ *
+ * @property-read int $userhaslearning;
+ *
+ * @package    totara
+ * @subpackage navigation
+ */
+
 class requiredlearning extends \totara_core\totara\menu\item {
+
+    /**
+    * @var bool Whether this user actually has current programs or certifications assigned.
+    */
+    protected $userhaslearning = false;
+
+    /**
+     * Constructor.
+     *
+     * @param object $node
+     */
+    public function __construct($node) {
+        global $CFG, $USER;
+        parent::__construct($node);
+        require_once($CFG->dirroot . '/totara/program/lib.php');
+        $this->url = prog_get_tab_link($USER->id);
+        if ($this->url === false) {
+            $this->url = '/totara/program/required.php';
+        } else {
+            $this->userhaslearning = true;
+        }
+    }
 
     protected function get_default_title() {
         return get_string('requiredlearningmenu', 'totara_program');
     }
 
     protected function get_default_url() {
-        global $CFG, $USER;
-
-        require_once($CFG->dirroot . '/totara/plan/lib.php');
-        $this->url = prog_get_tab_link($USER->id);
-        if (empty($this->url)) {
-            $this->url = '/totara/program/required.php';
-        }
         return $this->url;
     }
 
@@ -54,8 +78,9 @@ class requiredlearning extends \totara_core\totara\menu\item {
     }
 
     protected function check_visibility() {
-
-        if (totara_feature_visible('programs') || totara_feature_visible('certifications')) {
+        // Only show Required Learning if programs/certifications are enabled.
+        // And if the user actually has programs or certifications assigned and active.
+        if ($this->userhaslearning && (totara_feature_visible('programs') || totara_feature_visible('certifications'))) {
             return menu::SHOW_ALWAYS;
         } else {
             return menu::HIDE_ALWAYS;

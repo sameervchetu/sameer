@@ -133,7 +133,8 @@ if (totara_feature_visible('programs')) {
     echo html_writer::empty_tag('input', array('type' => 'submit', 'id' => 'add-program-learningitem-dialog',
         'value' => get_string('addprograms', 'totara_cohort')));
     echo html_writer::end_tag('div');
-
+}
+if (totara_feature_visible('certifications')) {
     echo html_writer::start_tag('div', array('class' => 'singlebutton'));
     echo html_writer::empty_tag('input', array('type' => 'submit', 'id' => 'add-certification-learningitem-dialog',
         'value' => get_string('addcertifications', 'totara_cohort')));

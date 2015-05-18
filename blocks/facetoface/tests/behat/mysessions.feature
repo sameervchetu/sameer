@@ -5,7 +5,8 @@ Feature: Confirm Sessions show up in my face to face sessions
   I need to be able to see and create sessions
 
   Background:
-    Given the following "users" exist:
+    Given I am on a totara site
+    And the following "users" exist:
       | username | firstname | lastname | email |
       | teacher1 | Teacher | 1 | teacher1@example.com |
       | learner1  | Learner | 1 | learner@example.com |

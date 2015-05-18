@@ -3640,9 +3640,14 @@ function compare_activities_by_time_asc($a, $b) {
  * @global object $CFG
  * @param int $userid
  * @param int $courseid
+ * @param int $windowopens  The time the window opens, so we can act differently for historic uploads
  */
-function archive_course_activities($userid, $courseid) {
+function archive_course_activities($userid, $courseid, $windowopens = NULL) {
     global $DB, $CFG;
+
+    if (!isset($windowopens)) {
+        $windowopens = time();
+    }
 
     // Get all distinct module names for this course.
     $sql = "SELECT DISTINCT m.name
@@ -3671,7 +3676,7 @@ function archive_course_activities($userid, $courseid) {
                     if (!function_exists($modfunction)) {
                         debugging('feature_archive_completion is supported but is missing the function in the plugin lib file');
                     } else {
-                        $modfunction($userid, $courseid);
+                        $modfunction($userid, $courseid, $windowopens);
                     }
                 } else {
                     // Reset manually.

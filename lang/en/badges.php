@@ -224,6 +224,7 @@ $string['error:backpackproblem'] = 'There was a problem connecting to your backp
 $string['error:badjson'] = 'The connection attempt returned invalid data.';
 $string['error:cannotact'] = 'Cannot activate the badge "{$a}". ';
 $string['error:cannotawardbadge'] = 'Cannot award badge to a user.';
+$string['error:cannotdeletecriterion'] = 'This criterion cannot be deleted. ';
 $string['error:connectionunknownreason'] = 'The connection was unsuccessful but no reason was given.';
 $string['error:clone'] = 'Cannot clone the badge.';
 $string['error:dialognotreeitems'] = 'No badges';

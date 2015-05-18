@@ -285,7 +285,7 @@ function recertify_window_opens_stage() {
     global $DB, $CFG;
 
     // Find any users who have reached this point.
-    $sql = "SELECT cfc.id as uniqueid, u.*, cf.id as certifid, cfc.userid, p.id as progid
+    $sql = "SELECT cfc.id as uniqueid, u.*, cf.id as certifid, cfc.userid, p.id as progid, cfc.timewindowopens as windowopens
             FROM {certif_completion} cfc
             JOIN {certif} cf on cf.id = cfc.certifid
             JOIN {prog} p on p.certifid = cf.id
@@ -494,7 +494,7 @@ function certif_get_content_completion_time($certificationid, $userid) {
  */
 function write_certif_completion($certificationid, $userid, $certificationpath = CERTIFPATH_CERT,
                                                             $renewalstatus = CERTIFRENEWALSTATUS_NOTDUE) {
-    global $DB, $CFG;
+    global $DB;
 
     $certification = $DB->get_record('certif', array('id' => $certificationid));
     if (!$certification) {
@@ -534,6 +534,11 @@ function write_certif_completion($certificationid, $userid, $certificationpath =
         $todb->timeexpires = get_timeexpires($base, $certification->activeperiod);
         $todb->timewindowopens = get_timewindowopens($todb->timeexpires, $certification->windowperiod);
         $todb->timecompleted = $lastcompleted;
+
+        // Put the new timeexpires into the timedue field in the prog_completion, so that it will be there if the cert expires.
+        $programid = $DB->get_field('prog', 'id', array('certifid' => $certificationid));
+        $DB->set_field('prog_completion', 'timedue', $todb->timeexpires,
+            array('programid' => $programid, 'userid' => $userid, 'coursesetid' => 0));
     } else { // Certifying.
         $todb->status =  CERTIFSTATUS_ASSIGNED;
         // Window/expires not relevant for CERTIFPATH_CERT as should be doing in program 'due' time.
@@ -1205,7 +1210,7 @@ function reset_certifcomponent_completions($certifcompletion, $courses=null) {
     if ($pcp = $DB->get_record('prog_completion', array('programid' => $prog->id, 'userid' => $userid, 'coursesetid' => 0))) {
         $pcp->status = STATUS_PROGRAM_INCOMPLETE;
         $pcp->timestarted = 0;
-        $pcp->timedue = 0;
+        // Don't set timedue, as this was set when the user certified.
         $pcp->timecompleted = 0;
         $DB->update_record('prog_completion', $pcp);
     } else {
@@ -1236,7 +1241,7 @@ function reset_certifcomponent_completions($certifcompletion, $courses=null) {
     foreach ($courseids as $courseid) {
         // Call course/lib.php functions.
         archive_course_completion($userid, $courseid);
-        archive_course_activities($userid, $courseid);
+        archive_course_activities($userid, $courseid, $certifcompletion->windowopens);
     }
 
     // Remove mesages for prog&user so we can resend them.
@@ -1319,10 +1324,10 @@ function get_certiftimebase($recertifydatetype, $timeexpires, $timecompleted) {
 }
 
 /**
- * Work out the certification expiry time
+ * Work out the certification expiry time.
  *
- * @param string $activeperiod (relative time string)
  * @param integer $base (from get_certiftimebase())
+ * @param string $activeperiod (relative time string)
  * @return integer
  */
 function get_timeexpires($base, $activeperiod) {

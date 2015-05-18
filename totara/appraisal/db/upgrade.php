@@ -270,5 +270,30 @@ function xmldb_totara_appraisal_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2014120901, 'totara', 'appraisal');
     }
 
+    // Add appraisal_user_event table to track events scheduled for specific users.
+    if ($oldversion < 2015030201) {
+
+        // Define table to be created.
+        $table = new xmldb_table('appraisal_user_event');
+
+        // Add fields.
+        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null, null);
+        $table->add_field('userid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null, null);
+        $table->add_field('eventid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null, null);
+        $table->add_field('timescheduled', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null, null);
+
+        // Add keys.
+        $table->add_key('primary', XMLDB_KEY_PRIMARY, array('id'));
+        $table->add_key('userid', XMLDB_KEY_FOREIGN, array('userid'), 'user', array('id'));
+        $table->add_key('eventid', XMLDB_KEY_FOREIGN, array('eventid'), 'appraisal_event', array('id'));
+
+        // Create table.
+        if (!$dbman->table_exists($table)) {
+            $dbman->create_table($table);
+        }
+
+        upgrade_plugin_savepoint(true, 2015030201, 'totara', 'appraisal');
+    }
+
     return true;
 }

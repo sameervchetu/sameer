@@ -29,7 +29,7 @@ global $CFG;
 require_once($CFG->dirroot . '/totara/certification/lib.php');
 
 /**
- * Certificate module PHPUnit archive test class
+ * Certification module PHPUnit archive test class
  *
  * To test, run this from the command line from the $CFG->dirroot
  * vendor/bin/phpunit --verbose totara_certification_recertdates_testcase totara/certification/tests/recertdates_test.php

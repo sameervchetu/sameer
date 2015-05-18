@@ -351,22 +351,37 @@ class totara_cohort_program_audiencevisibility_testcase extends reportcache_adva
      * Create programs with available fields.
      */
     protected function create_programs_with_availability() {
+        global $DB;
+
         // Create programs based on available fields.
         $today = time();
-        $from = $today - (5 * DAYSECS);
-        $until = $today - DAYSECS;
-        $paramsprogram7 = array('fullname' => 'program7', 'summary' => '', 'available' => 0);
-        $paramsprogram8 = array('fullname' => 'program8', 'summary' => '', 'available' => 1, 'availablefrom' => $from,
-                                'availableuntil' => $until );
-        $paramsprogram9 = array('fullname' => 'program9', 'summary' => '', 'available' => 1, 'availablefrom' => $from,
-                                'availableuntil' => $today + DAYSECS );
-        $this->program7 = $this->getDataGenerator()->create_program($paramsprogram7); // Not available (Just admin).
-        $this->program8 = $this->getDataGenerator()->create_program($paramsprogram8); // Available for students(until yesterday).
-        $this->program9 = $this->getDataGenerator()->create_program($paramsprogram9); // Available for students(until tomorrow).
+        $earlier = $today - (5 * DAYSECS);
+        $yesterday = $today - DAYSECS;
+        $tomorrow = $today + DAYSECS;
+
+        // Not available (just admin), because it is past the available window.
+        $paramsprogram7 = array('fullname' => 'program7', 'summary' => '', 'availablefrom' => $earlier,
+                                'availableuntil' => $yesterday );
+        // Available to students until yesterday, but available flag hasn't been processed on cron yet (see below).
+        $paramsprogram8 = array('fullname' => 'program8', 'summary' => '', 'availablefrom' => $earlier,
+                                'availableuntil' => $yesterday );
+        // Available to students until tomorrow.
+        $paramsprogram9 = array('fullname' => 'program9', 'summary' => '', 'availablefrom' => $earlier,
+                                'availableuntil' => $tomorrow );
+        $this->program7 = $this->getDataGenerator()->create_program($paramsprogram7);
+        $this->program8 = $this->getDataGenerator()->create_program($paramsprogram8);
+        $this->program9 = $this->getDataGenerator()->create_program($paramsprogram9);
+
+        // For program8, since we want to simulate the situation where cron has not yet changed the available flag from
+        // available to not available, we need to manually change it to available (since it was automatically calculated
+        // as unavailable when created, due to the actual date being outside the given from-until).
+        $DB->set_field('prog', 'available', AVAILABILITY_TO_STUDENTS, array('id' => $this->program8->id));
+
         // Assign users to the programs.
         $this->getDataGenerator()->assign_program($this->program7->id, array($this->user1->id, $this->user2->id));
         $this->getDataGenerator()->assign_program($this->program8->id, array($this->user1->id, $this->user2->id));
         $this->getDataGenerator()->assign_program($this->program9->id, array($this->user1->id, $this->user2->id));
+
         // Assign audience1 to programs.
         totara_cohort_add_association($this->audience1->id, $this->program7->id, COHORT_ASSN_ITEMTYPE_PROGRAM, COHORT_ASSN_VALUE_VISIBLE);
         totara_cohort_add_association($this->audience1->id, $this->program8->id, COHORT_ASSN_ITEMTYPE_PROGRAM, COHORT_ASSN_VALUE_VISIBLE);

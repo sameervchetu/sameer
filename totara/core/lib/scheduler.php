@@ -50,6 +50,8 @@ class scheduler {
     const DAILY = 1;
     const WEEKLY = 2;
     const MONTHLY = 3;
+    const HOURLY = 4;
+    const MINUTELY = 5;
 
     /**
      * DB row decorated object
@@ -148,11 +150,21 @@ class scheduler {
             $timestamp = strtotime($datetime->format('Y-m-d H:i:s'));
         }
         $this->set_time($timestamp);
+        $timeminute = date('i', $this->time);
+        $timehour = date('H', $this->time);
         $timeday = date('j', $this->time);
         $timemonth = date('n', $this->time);
         $timeyear = date('Y', $this->time);
 
         switch ($frequency) {
+            case self::MINUTELY:
+                $nexttimeminute = (floor($timeminute / $schedule) + 1) * $schedule;
+                $nextevent = mktime($timehour, $nexttimeminute, 0, $timemonth, $timeday, $timeyear);
+                break;
+            case self::HOURLY:
+                $nexttimehour = (floor($timehour / $schedule) + 1) * $schedule;
+                $nextevent = mktime($nexttimehour, 0, 0, $timemonth, $timeday, $timeyear);
+                break;
             case self::DAILY:
                 // We need to account for DST boundary changes.
                 // A particular hour the next day across the boundary may be 23-25 hours from the last run.
@@ -248,7 +260,10 @@ class scheduler {
     public static function get_options() {
         return array('daily' => self::DAILY,
                      'weekly' => self::WEEKLY,
-                     'monthly' => self::MONTHLY);
+                     'monthly' => self::MONTHLY,
+                     'hourly' => self::HOURLY,
+                     'minutely' => self::MINUTELY,
+        );
     }
 
     /**
@@ -275,17 +290,23 @@ class scheduler {
         $timeyear = date('Y', $this->time);
 
         switch($this->subject->{$this->map['frequency']}) {
+            case self::MINUTELY:
+                $out .= get_string('scheduledminutely', 'totara_core', $schedule);
+                break;
+            case self::HOURLY:
+                $out .= get_string('scheduledhourly', 'totara_core', $schedule);
+                break;
             case self::DAILY:
-                $out .= get_string('daily', 'totara_reportbuilder') . ' ' .  get_string('at', 'totara_reportbuilder') . ' ';
-                $out .= strftime(get_string('strftimetime', 'langconfig') , mktime($schedule, 0, 0, $timemonth, $timeday, $timeyear));
+                $out .= get_string('scheduleddaily', 'totara_core',
+                    strftime(get_string('strftimetime', 'langconfig'), mktime($schedule, 0, 0, $timemonth, $timeday, $timeyear)));
                 break;
             case self::WEEKLY:
-                $out .= get_string('weekly', 'totara_reportbuilder') . ' ' . get_string('on', 'totara_reportbuilder') . ' ';
-                $out .= $calendardays[$schedule]['fullname'];
+                $out .= get_string('scheduledweekly', 'totara_core',
+                    $calendardays[$schedule]['fullname']);
                 break;
             case self::MONTHLY:
-                $out .= get_string('monthly', 'totara_reportbuilder') . ' ' . get_string('onthe', 'totara_reportbuilder') . ' ';
-                $out .= date($dateformat , mktime(0, 0, 0, 0, $schedule, $timeyear));
+                $out .= get_string('scheduledmonthly', 'totara_core',
+                    date($dateformat , mktime(0, 0, 0, 0, $schedule, $timeyear)));
                 break;
         }
 

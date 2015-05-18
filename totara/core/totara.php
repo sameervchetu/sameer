@@ -242,7 +242,7 @@ function totara_import_timezonelist() {
     }
 
     // Otherwise, let's try moodle.org's copy.
-    $source = 'http://download.moodle.org/timezone/';
+    $source = 'https://download.moodle.org/timezone/';
     if (!$importdone && ($content=download_file_content($source))) {
         if ($file = fopen($CFG->tempdir.'/timezone.txt', 'w')) {            // Make local copy
             fwrite($file, $content);
@@ -557,12 +557,13 @@ function totara_upgrade_installed_languages() {
  * Currently the options array only supports a 'class' entry for passing as
  * the second parameter to notification()
  *
- * @param   string  $message    Message to display
- * @param   string  $redirect   Url to redirect to (optional)
- * @param   array   $options    Options array (optional)
- * @return  void
+ * @param string $message Message to display
+ * @param string $redirect Url to redirect to (optional)
+ * @param array $options An array of options to pass to totara_queue_append (optional)
+ * @param bool $immediatesend If set to true the notification is immediately sent
+ * @return void
  */
-function totara_set_notification($message, $redirect = null, $options = array()) {
+function totara_set_notification($message, $redirect = null, $options = array(), $immediatesend = true) {
 
     // Check options is an array
     if (!is_array($options)) {
@@ -579,7 +580,11 @@ function totara_set_notification($message, $redirect = null, $options = array())
     if ($redirect !== null) {
         // Cancel redirect for AJAX scripts.
         if (is_ajax_request($_SERVER)) {
-            ajax_result(true, totara_queue_shift('notifications'));
+            if (!$immediatesend) {
+                ajax_result(true);
+            } else {
+                ajax_result(true, totara_queue_shift('notifications'));
+            }
         } else {
             redirect($redirect);
         }
@@ -965,30 +970,26 @@ function totara_print_scheduled_reports($showoptions=true, $showaddform=true, $s
 }
 
 function totara_print_my_courses() {
-    global $USER, $PAGE, $COMPLETION_STATUS;
-    $content = '';
-    $courses = completion_info::get_all_courses($USER->id, 10);
-    $displaycourses = array();
-    if ($courses) {
-        foreach ($courses as $course) {
-            $displaycourse = new stdClass();
-            $displaycourse->course = $course->course;
-            $displaycourse->name = format_string($course->name);
-            $enrolled = $course->timeenrolled;
-            $completed = $course->timecompleted;
-            $starteddate = '';
-            if ($course->timestarted != 0) {
-                $starteddate = userdate($course->timestarted, get_string('strfdateshortmonth', 'langconfig'));
-            }
-            $displaycourse->starteddate = $starteddate;
-            $displaycourse->enroldate = isset($enrolled) && $enrolled != 0 ? userdate($enrolled, get_string('strfdateshortmonth', 'langconfig')) : null;
-            $displaycourse->completeddate = isset($completed) && $completed != 0 ? userdate($completed, get_string('strfdateshortmonth', 'langconfig')) : null;
-            $displaycourse->status = $course->status ? $course->status : COMPLETION_STATUS_NOTYETSTARTED;
-            $displaycourses[] = $displaycourse;
-        }
+    global $CFG, $OUTPUT;
+
+    // Report builder lib is required for the embedded report.
+    require_once($CFG->dirroot.'/totara/reportbuilder/lib.php');
+
+    echo $OUTPUT->heading(get_string('mycurrentprogress', 'totara_core'));
+
+    $sid = optional_param('sid', '0', PARAM_INT);
+    $debug  = optional_param('debug', 0, PARAM_INT);
+
+    if (!$report = reportbuilder_get_embedded_report('course_progress', array(), false, $sid)) {
+        print_error('error:couldnotgenerateembeddedreport', 'totara_reportbuilder');
     }
-    $renderer = $PAGE->get_renderer('totara_core');
-    echo $renderer->print_my_courses($displaycourses, $USER->id);
+
+    if ($debug) {
+        $report->debug($debug);
+    }
+
+    $report->include_js();
+    $report->display_table();
 }
 
 
@@ -1605,6 +1606,63 @@ function sql_cast2float($fieldname) {
     return $sql;
 }
 
+/**
+ * Returns as case sensitive field name.
+ *
+ * @param string $field table field name
+ * @return string SQL code fragment
+ */
+function sql_collation($field) {
+    global $DB;
+
+    $namefield = $field;
+    switch ($DB->get_dbfamily()) {
+        case('sqlsrv'):
+        case('mssql'):
+            $namefield  = "{$field} COLLATE " . mssql_get_collation(). " AS {$field}";
+            break;
+        case('mysql'):
+            $namefield = "(BINARY {$field}) AS {$field}";
+            break;
+        case('postgres'):
+            $namefield = $field;
+            break;
+    }
+
+    return $namefield;
+}
+
+/**
+ * Returns 'collation' part of a query.
+ *
+ * @param bool $casesensitive use case sensitive search
+ * @param bool $accentsensitive use accent sensitive search
+ * @return string SQL code fragment
+ */
+function mssql_get_collation($casesensitive = true, $accentsensitive = true) {
+    global $DB, $CFG;
+
+    // Make some default.
+    $collation = 'Latin1_General_CI_AI';
+
+    $sql = "SELECT CAST(DATABASEPROPERTYEX('{$CFG->dbname}', 'Collation') AS varchar(255)) AS SQLCollation";
+    $record = $DB->get_record_sql($sql, null, IGNORE_MULTIPLE);
+    if ($record) {
+        $collation = $record->sqlcollation;
+        if ($casesensitive) {
+            $collation = str_replace('_CI', '_CS', $collation);
+        } else {
+            $collation = str_replace('_CS', '_CI', $collation);
+        }
+        if ($accentsensitive) {
+            $collation = str_replace('_AI', '_AS', $collation);
+        } else {
+            $collation = str_replace('_AS', '_AI', $collation);
+        }
+    }
+
+    return $collation;
+}
 
 /**
  * Assign a user a position assignment and create/delete role assignments as required

@@ -326,9 +326,13 @@ class totara_cohort_program_completion_rules_testcase extends reportcache_advanc
      */
     public function data_program_completion_list() {
         $data = array(
-            array(array('operator' => COHORT_RULE_COMPLETION_OP_NONE),  array('program3', 'program4'), 3),
+            // If user has NOT completed ANY of program
+            array(array('operator' => COHORT_RULE_COMPLETION_OP_NONE),  array('program3', 'program4'), 5),
+            // If user has completed ANY of program.
             array(array('operator' => COHORT_RULE_COMPLETION_OP_ANY), array('program3', 'program4'), 4),
-            array(array('operator' => COHORT_RULE_COMPLETION_OP_NOTALL),  array('program3', 'program4'), 5),
+            // If user has NOT completed ALL of program
+            array(array('operator' => COHORT_RULE_COMPLETION_OP_NOTALL),  array('program3', 'program4'), 7),
+            // If user has completed ALL of program.
             array(array('operator' => COHORT_RULE_COMPLETION_OP_ALL), array('program3', 'program4'), 2),
         );
         return $data;
@@ -354,9 +358,9 @@ class totara_cohort_program_completion_rules_testcase extends reportcache_advanc
         cohort_rules_approve_changes($this->cohort);
 
         // It should match:
-        // 1. data1: 3 (users that had not completed program3 or program4).
+        // 1. data1: 5 (users that had not completed program3 or program4).
         // 2. data2: 4 (users who completed one of the programs).
-        // 3. data3: 5 (users who have not completed all programs).
+        // 3. data3: 7 (users who have not completed all programs).
         // 4. data4: 2 (users who has completed both programs).
         $this->assertEquals($usercount, $DB->count_records('cohort_members', array('cohortid' => $this->cohort->id)));
     }

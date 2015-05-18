@@ -349,7 +349,7 @@ class totara_reportbuilder_renderer extends plugin_renderer_base {
      */
     public function cache_pending_notification($report = 0) {
         global $CFG;
-        if (!$CFG->enablereportcaching) {
+        if (empty($CFG->enablereportcaching)) {
             return '';
         }
         if (is_numeric($report)) {
@@ -638,6 +638,29 @@ class totara_reportbuilder_renderer extends plugin_renderer_base {
         $table->data = $data;
 
         return html_writer::table($table);
+    }
+
+    /**
+     * Renders a list of items for the email setting in schedule reports.
+     *
+     * @param object $item An item object which should contain id and name properties
+     * @param string $filtername The filter name where the item belongs
+     * @return string $out HTML output
+     */
+    public function schedule_email_setting($item, $filtername) {
+        $name = (isset($item->name)) ? $item->name : $item->fullname;
+        $strdelete = get_string('delete');
+        $out = html_writer::start_tag('div', array('data-filtername' => $filtername,
+            'id' => "{$filtername}_{$item->id}",
+            'data-id' => $item->id,
+            'class' => 'multiselect-selected-item audience_setting'));
+        $out .= format_string($name);
+        $out .= $this->output->action_icon('#', new pix_icon('/t/delete', $strdelete, 'moodle'), null,
+            array('class' => 'action-icon delete'));
+
+        $out .= html_writer::end_tag('div');
+
+        return $out;
     }
 
 }

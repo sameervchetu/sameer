@@ -25,6 +25,9 @@
 
 defined('MOODLE_INTERNAL') || die();
 
+global $CFG;
+require_once($CFG->dirroot . '/totara/hierarchy/lib.php');
+
 /**
  * Hierarchy generator
  *
@@ -71,6 +74,25 @@ class totara_hierarchy_generator extends component_generator_base {
                                      'goal' => 0,
                                      'organisation' => 0,
                                      'position' => 0);
+
+    /**
+     * Redirect behat generator with appropriate prefix.
+     */
+    public function create_pos_frame($data) {
+        return $this->create_framework('position', $data);
+    }
+
+    public function create_org_frame($data) {
+        return $this->create_framework('organisation', $data);
+    }
+
+    public function create_comp_frame($data) {
+        return $this->create_framework('competency', $data);
+    }
+
+    public function create_goal_frame($data) {
+        return $this->create_framework('goal', $data);
+    }
 
     /**
      * Create a framework for the given prefix.
@@ -149,6 +171,25 @@ class totara_hierarchy_generator extends component_generator_base {
         }
 
         return $framework;
+    }
+
+    /**
+     * Redirect behat generator with appropriate prefix.
+     */
+    public function create_pos($data) {
+        return $this->create_hierarchy($data['frameworkid'], 'position', $data);
+    }
+
+    public function create_org($data) {
+        return $this->create_hierarchy($data['frameworkid'], 'organisation', $data);
+    }
+
+    public function create_comp($data) {
+        return $this->create_hierarchy($data['frameworkid'], 'competency', $data);
+    }
+
+    public function create_goal($data) {
+        return $this->create_hierarchy($data['frameworkid'], 'goal', $data);
     }
 
     /**
@@ -267,6 +308,35 @@ class totara_hierarchy_generator extends component_generator_base {
         return $hierarchy_ids;
     }
 
+    /**
+     * Redirect behat generator with appropriate prefix.
+     */
+    public function create_pos_assign($data) {
+        global $DB, $CFG;
+        require_once($CFG->dirroot . '/totara/hierarchy/prefix/position/lib.php');
+
+        $record = $DB->get_record('pos_assignment', array('userid' => $data['userid'], 'type' => POSITION_TYPE_PRIMARY));
+        unset($record->positionid); // Force override.
+        return $this->assign_primary_position($data['userid'], null, null, $data['positionid'], (array)$record);
+    }
+
+    public function create_org_assign($data) {
+        global $DB, $CFG;
+        require_once($CFG->dirroot . '/totara/hierarchy/prefix/position/lib.php');
+
+        $record = $DB->get_record('pos_assignment', array('userid' => $data['userid'], 'type' => POSITION_TYPE_PRIMARY));
+        unset($record->organisationid); // Force override.
+        return $this->assign_primary_position($data['userid'], null, $data['organisationid'], null, (array)$record);
+    }
+
+    public function create_man_assign($data) {
+        global $DB, $CFG;
+        require_once($CFG->dirroot . '/totara/hierarchy/prefix/position/lib.php');
+
+        $record = $DB->get_record('pos_assignment', array('userid' => $data['userid'], 'type' => POSITION_TYPE_PRIMARY));
+        unset($record->managerid); // Force override.
+        return $this->assign_primary_position($data['userid'], $data['managerid'], null, null, (array)$record);
+    }
 
     /**
      * Assign primary positions to a user.

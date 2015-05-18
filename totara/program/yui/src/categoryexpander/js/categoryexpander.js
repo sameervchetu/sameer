@@ -35,6 +35,7 @@ var CSS = {
         CONTENTNODE: '.content',
         CATEGORYLISTENLINK: '.category .info .categoryname',
         CATEGORYSPINNERLOCATION: '.categoryname',
+        CATEGORYWITHCOLLAPSEDUNLOADEDCHILDREN: '.category.with_children.notloaded.collapsed',
         CATEGORYWITHCOLLAPSEDLOADEDCHILDREN: '.category.with_children.loaded.collapsed',
         CATEGORYWITHMAXIMISEDLOADEDCHILDREN: '.category.with_children.loaded:not(.collapsed)',
         COLLAPSEEXPAND: '.collapseexpand',
@@ -158,7 +159,8 @@ NS._toggle_programbox_expansion = function(e) {
 
 NS._toggle_category_expansion = function(e) {
     var categorynode,
-        categoryid;
+        categoryid,
+        depth;
 
     if (e.target.test('a') || e.target.test('img')) {
         // Return early if either an anchor or an image were clicked.
@@ -181,6 +183,7 @@ NS._toggle_category_expansion = function(e) {
 
     // We use Data attributes to store the category.
     categoryid = categorynode.getData('categoryid');
+    depth = categorynode.getData('depth');
 
     YUI().use('querystring-parse', function(Y) {
         query = Y.QueryString.parse(window.location.search.substr(1));
@@ -193,6 +196,7 @@ NS._toggle_category_expansion = function(e) {
             spinnerhandle: SELECTORS.CATEGORYSPINNERLOCATION,
             data: {
                 id: categoryid,
+                depth: depth,
                 type: TYPE_CATEGORY,
                 categorytype: query.viewtype
             }
@@ -324,6 +328,34 @@ NS._collapse_expand_all = function(e) {
 
 NS.expand_all = function(ancestor) {
     var finalexpansions = [];
+
+    var query = {
+        viewType: window.location.search.substr(1)
+    };
+
+    if (!query.viewType) {
+        query.viewType = 'program';
+    }
+
+    ancestor.all(SELECTORS.CATEGORYWITHCOLLAPSEDUNLOADEDCHILDREN).each(function(categorynode) {
+        categoryid = categorynode.getData('categoryid');
+        depth = categorynode.getData('depth');
+        if (typeof categoryid === "undefined" || typeof depth === "undefined") {
+            return;
+        }
+
+        this._toggle_generic_expansion({
+            parentnode: categorynode,
+            childnode: categorynode.one(SELECTORS.CONTENTNODE),
+            spinnerhandle: SELECTORS.CATEGORYSPINNERLOCATION,
+            data: {
+                id: categoryid,
+                depth: depth,
+                type: TYPE_CATEGORY,
+                categorytype: query.viewType
+            }
+        });
+    }, this);
 
     ancestor.all(SELECTORS.CATEGORYWITHCOLLAPSEDLOADEDCHILDREN)
         .each(function(c) {

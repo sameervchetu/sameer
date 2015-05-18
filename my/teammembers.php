@@ -43,6 +43,7 @@ global $USER;
 $edit = optional_param('edit', -1, PARAM_BOOL);
 $sid = optional_param('sid', '0', PARAM_INT);
 $format = optional_param('format', '', PARAM_TEXT); // Export format.
+$debug  = optional_param('debug', 0, PARAM_INT);
 
 /* Define the "Team Members" embedded report */
 $strheading = get_string('teammembers', 'totara_core');
@@ -50,6 +51,10 @@ $strheading = get_string('teammembers', 'totara_core');
 $shortname = 'team_members';
 if (!$report = reportbuilder_get_embedded_report($shortname, null, false, $sid)) {
     print_error('error:couldnotgenerateembeddedreport', 'totara_reportbuilder');
+}
+
+if ($debug) {
+    $report->debug($debug);
 }
 
 $logurl = $PAGE->url->out_as_local_url();

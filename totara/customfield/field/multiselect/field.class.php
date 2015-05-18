@@ -135,6 +135,34 @@ class customfield_multiselect extends customfield_base {
     }
 
     /**
+     * Changes the customfield value from a string to the actual option
+     * array that matches the string.
+     *
+     * @param  object $syncitem     The original syncitem to be processed.
+     * @return object               The syncitem with the customfield data processed.
+     */
+    public function sync_data_preprocess($syncitem) {
+        // Get the sync value out of the item.
+        $fieldname = $this->inputname;
+        $value = $syncitem->$fieldname;
+
+        // Now get the corresponding option for that value.
+        foreach ($this->options as $key => $option) {
+            if ($option['option'] == $value) {
+                $selected = array($key => $option);
+            }
+        }
+
+        // If no matching option is found set it to empty.
+        if (!isset($selected)) {
+            $selected = NULL;
+        }
+
+        $syncitem->$fieldname = $selected;
+        return $syncitem;
+    }
+
+    /**
      * The data from the form returns the key. This should be converted to the
      * respective option string to be saved in database
      * Overwrites base class accessor method

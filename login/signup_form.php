@@ -35,9 +35,11 @@ class login_signup_form extends moodleform {
         global $USER, $CFG;
 
         $mform = $this->_form;
+        $positionid = $this->_customdata['positionid'];
+        $organisationid = $this->_customdata['organisationid'];
+        $managerid = $this->_customdata['managerid'];
 
         $mform->addElement('header', 'createuserandpass', get_string('createuserandpass'), '');
-
 
         $mform->addElement('text', 'username', get_string('username'), 'maxlength="100" size="12"');
         $mform->setType('username', PARAM_NOTAGS);
@@ -100,19 +102,19 @@ class login_signup_form extends moodleform {
 
         // Manage positions in signup self-registration.
         if (get_config('totara_hierarchy', 'allowsignupposition')) {
-            profile_signup_position($mform, $nojs);
+            profile_signup_position($mform, $nojs, $positionid);
             $requirenojs = true;
         }
 
         // Manage organisations in signup self-registration.
         if (get_config('totara_hierarchy', 'allowsignuporganisation')) {
-            profile_signup_organisation($mform, $nojs);
+            profile_signup_organisation($mform, $nojs, $organisationid);
             $requirenojs = true;
         }
 
         // Manage managers in signup self-registration.
         if (get_config('totara_hierarchy', 'allowsignupmanager')) {
-            profile_signup_manager($mform, $nojs);
+            profile_signup_manager($mform, $nojs, $managerid);
             $requirenojs = true;
         }
 

@@ -108,6 +108,8 @@ if ($delete) {
 
         $DB->delete_records('dp_objective_scale_value', array('objscaleid' => $scale->id)); // Delete scale values
         $DB->delete_records('dp_objective_scale', array('id' => $scale->id)); // Delete scale itself
+
+        \totara_plan\event\objective_scale_deleted::create_from_scale($scale)->trigger();
         totara_set_notification(get_string('deletedobjectivescale', 'totara_plan', format_string($scale->name)), $CFG->wwwroot.'/totara/plan/objectivescales/index.php', array('class' => 'notifysuccess'));
 
     } else {

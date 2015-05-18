@@ -5,7 +5,8 @@ Feature: Add a face to face
   I need to create a face to face activity
 
   Background:
-    Given the following "users" exist:
+    Given I am on a totara site
+    And the following "users" exist:
       | username | firstname | lastname | email               |
       | teacher1 | Terry1    | Teacher1 | teacher1@moodle.com |
       | student1 | Sam1      | Student1 | student1@moodle.com |

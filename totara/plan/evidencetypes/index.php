@@ -55,10 +55,13 @@ if (!empty($deleteid)) {
         }
 
         $transaction = $DB->start_delegated_transaction();
-        $DB->delete_records('dp_evidence_type', array('id' => $item->id));
         $sql = "UPDATE {dp_plan_evidence} SET evidencetypeid = NULL WHERE evidencetypeid = ?";
-        $DB->execute($sql, array($deleteid));
+        $DB->execute($sql, array($item->id));
+        $DB->delete_records('dp_evidence_type', array('id' => $item->id));
         $transaction->allow_commit();
+
+        \totara_plan\event\evidence_type_deleted::create_from_type($item)->trigger();
+
         totara_set_notification(get_string('deletedevidencetype', 'totara_plan',
                 format_string($item->name)),
                 $indexurl,

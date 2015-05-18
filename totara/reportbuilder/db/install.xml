@@ -187,6 +187,50 @@
         <KEY NAME="repobuilsche_sav_fk" TYPE="foreign" FIELDS="savedsearchid" REFTABLE="report_builder_saved" REFFIELDS="id"/>
       </KEYS>
     </TABLE>
+    <TABLE NAME="report_builder_schedule_email_audience" COMMENT="Storing audience to email in scheduled reports">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="scheduleid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="cohortid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="repobuilscheaud_sch_fk" TYPE="foreign" FIELDS="scheduleid" REFTABLE="report_builder_schedule" REFFIELDS="id"/>
+        <KEY NAME="repobuilscheaud_aud_fk" TYPE="foreign" FIELDS="cohortid" REFTABLE="cohort" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="idx_schedule_aud" UNIQUE="true" FIELDS="scheduleid, cohortid"/>
+      </INDEXES>
+    </TABLE>
+    <TABLE NAME="report_builder_schedule_email_systemuser" COMMENT="Storing system users to email in scheduled reports">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="scheduleid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="repobuilschesysuser_sch_fk" TYPE="foreign" FIELDS="scheduleid" REFTABLE="report_builder_schedule" REFFIELDS="id"/>
+        <KEY NAME="repobuilschesysuser_use_fk" TYPE="foreign" FIELDS="userid" REFTABLE="user" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="idx_schedule_sysuser" UNIQUE="true" FIELDS="scheduleid, userid"/>
+      </INDEXES>
+    </TABLE>
+    <TABLE NAME="report_builder_schedule_email_external" COMMENT="Storing external emails to send in scheduled reports">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="scheduleid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="email" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="repobuilscheexternaluser_sch_fk" TYPE="foreign" FIELDS="scheduleid" REFTABLE="report_builder_schedule" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="idx_schedule_extuser" UNIQUE="true" FIELDS="scheduleid, email"/>
+      </INDEXES>
+      </TABLE>
     <TABLE NAME="report_builder_cache" COMMENT="Storing details of scheduled reports caching">
       <FIELDS>
         <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>

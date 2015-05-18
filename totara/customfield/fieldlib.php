@@ -133,10 +133,22 @@ class customfield_base {
         $data->data         = $itemnew->{$this->inputname};
 
         if ($dataid = $DB->get_field($tableprefix.'_info_data', 'id', array($prefix.'id' => $itemnew->id, 'fieldid' => $data->fieldid))) {
-            $data->id = $dataid;
-            $DB->update_record($tableprefix.'_info_data', $data);
+            if ($itemnew->{$this->inputname} !== null) {
+                $data->id = $dataid;
+                $DB->update_record($tableprefix.'_info_data', $data);
+            } else {
+                // Don't update a field with a null value. Just delete the field data.
+                // This is mostly for the case when the field is null. Could be when resetting an option to the default
+                // For example in menu options when resetting to "Choose" option.
+                $DB->delete_records($tableprefix.'_info_data', array($prefix.'id' => $itemnew->id, 'fieldid' => $data->fieldid));
+            }
         } else {
-            $this->dataid = $DB->insert_record($tableprefix.'_info_data', $data);
+            if ($itemnew->{$this->inputname} !== null) {
+                $this->dataid = $DB->insert_record($tableprefix . '_info_data', $data);
+            } else {
+                // Invalid value. Don't save.
+                return;
+            }
         }
         $this->edit_save_data_postprocess($rawdata);
     }
@@ -184,6 +196,18 @@ class customfield_base {
         if (!empty($this->field->defaultdata)) {
             $mform->setDefault($this->inputname, $this->field->defaultdata);
         }
+    }
+
+    /**
+     * Does some extra pre-processing for totara sync uploads.
+     * Only required for custom fields with several options
+     * like menu of choices, and multi-select.
+     *
+     * @param  object $itemnew The item being saved
+     * @return object          The same item after processing
+     */
+    function sync_data_preprocess($itemnew) {
+        return $itemnew;
     }
 
     /**
@@ -457,7 +481,15 @@ function customfield_validation($itemnew, $prefix, $tableprefix) {
     return $err;
 }
 
-function customfield_save_data($itemnew, $prefix, $tableprefix) {
+/**
+ * Process the data for a custom field and save it to the appropriate database table.
+ *
+ * @param object  $itemnew      The data we are saving
+ * @param string  $prefix       The custom field prefix (organisation, position, etc)
+ * @param string  $tableprefix  The table prefix (org_type, pos_type, etc)
+ * @param boolean $sync         Whether this is being called from sync and needs pre-preprocessing.
+ */
+function customfield_save_data($itemnew, $prefix, $tableprefix, $sync = false) {
     global $CFG, $DB;
 
     $typestr = '';
@@ -473,6 +505,9 @@ function customfield_save_data($itemnew, $prefix, $tableprefix) {
         require_once($CFG->dirroot.'/totara/customfield/field/'.$field->datatype.'/field.class.php');
         $newfield = 'customfield_'.$field->datatype;
         $formfield = new $newfield($field->id, $itemnew, $prefix, $tableprefix);
+        if ($sync) {
+            $itemnew = $formfield->sync_data_preprocess($itemnew);
+        }
         $formfield->edit_save_data($itemnew, $prefix, $tableprefix);
     }
 }

@@ -35,7 +35,24 @@ require_once($CFG->libdir  . '/testing/generator/data_generator.php');
  * @category test
  */
 class totara_reportbuilder_cache_generator extends testing_data_generator {
-    protected static $ind = 0;
+    protected static $cohortrulecount = 0;
+    protected static $programcount = 0;
+    protected static $certificationcount = 0;
+    protected static $plancount = 0;
+
+    /**
+     * To be called from data reset code only,
+     * do not use in tests.
+     * @return void
+     */
+    public function reset() {
+        self::$cohortrulecount = 0;
+        self::$programcount = 0;
+        self::$certificationcount = 0;
+        self::$plancount = 0;
+        parent::reset();
+    }
+
     /**
      * Add particular mock params to cohort rules
      *
@@ -52,8 +69,8 @@ class totara_reportbuilder_cache_generator extends testing_data_generator {
         }
         foreach ($data as $d) {
             foreach ($d as $name => $value) {
+                self::$cohortrulecount++;
                 $todb = new stdClass();
-                $todb->id = self::$ind;
                 $todb->ruleid = $ruleid;
                 $todb->name = $name;
                 $todb->value = $value;
@@ -61,49 +78,84 @@ class totara_reportbuilder_cache_generator extends testing_data_generator {
                 $todb->timemodified = time();
                 $todb->modifierid = 2;
                 $DB->insert_record('cohort_rule_params', $todb);
-                self::$ind++;
             }
         }
     }
 
     /**
-     * Create mock program
+     * Create program for testing.
      *
      * @param array $data Override default properties
-     * @return stdClass Program record
+     * @return program Program object
      */
     public function create_program($data = array()) {
-        global $DB;
-        self::$ind++;
-        $now = time();
-        $sortorder = $DB->get_field('prog', 'MAX(sortorder) + 1', array());
-        $default = array('fullname' => 'Program ' . self::$ind,
-                         'availablefrom' => 0,
-                         'availableuntil' => 0,
-                         'timecreated' => $now,
-                         'timemodified' => $now,
-                         'usermodified' => 2,
-                         'category' => 1,
-                         'shortname' => '',
-                         'idnumber' => '',
-                         'available' => 1,
-                         'sortorder' => !empty($sortorder) ? $sortorder : 0,
-                         'icon' => 1,
-                         'exceptionssent' => 0,
-                         'visible' => 1,
-                         'summary' => '',
-                         'endnote' => '',
-                         'audiencevisible' => 2,
-                         'certifid' => null
-                        );
-        $properties = array_merge($default, $data);
+        // Keep a record of how many test programs are being created.
+        self::$programcount++;
 
-        $todb = (object)$properties;
-        $newid = $DB->insert_record('prog', $todb);
-        $program = new program($newid);
-        $messagemanager = new prog_messages_manager($newid, true);
+        // Set up defaults and merge them with the given data.
+        $defaults = array(
+            'fullname' => 'Program ' . self::$programcount,
+            'usermodified' => 2,
+            'category' => 1,
+        );
+        $properties = array_merge($defaults, $data);
 
+        // Create and return the program.
+        $program = program::create($properties);
         return $program;
+    }
+
+    /**
+     * Create program certification for testing.
+     *
+     * @param array $data Override default properties - use 'cert_' or 'prog_' prefix for each parameter name
+     * @return program Program object
+     */
+    public function create_certification($data = array()) {
+        global $DB;
+
+        // Keep a record of how many test certifications are being created.
+        self::$certificationcount++;
+
+        // Separate the program and certification parameters from the given data.
+        $programdata = array();
+        $certificationdata = array();
+        foreach ($data as $key => $value) {
+            if (substr($key, 0, 5) === 'prog_') {
+                $programdata[substr($key, 5)] = $value;
+            } else if (substr($key, 0, 5) === 'cert_') {
+                $certificationdata[substr($key, 5)] = $value;
+            } else {
+                throw new \coding_exception("create_certification \$data keys must be prefixed with 'prog_' or 'cert_'");
+            }
+        }
+
+        // Set up defaults and merge them with the given data.
+        $programdefaults = array(
+            'fullname' => 'Certification ' . self::$certificationcount,
+            'usermodified' => 2,
+        );
+        $programmerged = array_merge($programdefaults, $programdata);
+
+        // Set up defaults and merge them with the given data.
+        $certifdefaults = array(
+            'learningcomptype' => CERTIFTYPE_PROGRAM,
+            'activeperiod' => '1 year',
+            'windowperiod' => '1 month',
+            'recertifydatetype' => CERTIFRECERT_COMPLETION,
+            'timemodified' => time(),
+        );
+        $certificationmerged = array_merge($certifdefaults, $certificationdata);
+
+        // Create the certification first (the program will point to it).
+        $certificationid = $DB->insert_record('certif', (object)$certificationmerged);
+
+        // Set the certificationid in the program.
+        $programmerged['certifid'] = $certificationid;
+
+        // Create and return the program.
+        $certifprogram = $this->create_program($programmerged);
+        return $certifprogram;
     }
 
     /**
@@ -214,9 +266,9 @@ class totara_reportbuilder_cache_generator extends testing_data_generator {
      *
      * @param int $programid Program id
      * @param array $courseids of int Course id
-     * @param int $certifpath
+     * @param int $certifpath CERTIFPATH_XXX constant
      */
-    public function add_courseset_program($programid, $courseids, $certifpath = CERTIFPATH_CERT) {
+    public function add_courseset_program($programid, $courseids, $certifpath = CERTIFPATH_STD) {
         global $CERTIFPATHSUF;
 
         $rawdata = new stdClass();
@@ -240,13 +292,13 @@ class totara_reportbuilder_cache_generator extends testing_data_generator {
             $rawdata->certifpath_rc = CERTIFPATH_RECERT;
             $rawdata->iscertif = 1;
             $rawdata->contenttype_rc = 1;
-            $rawdata->{'999certifpath'} = 2;
+            $rawdata->{'999certifpath'} = $certifpath;
             $rawdata->contenttype_rc = 1;
-        } else { // Certification path.
+        } else { // Normal program or initial certification path.
             $rawdata->setprefixes_ce = 999;
-            $rawdata->certifpath_ce = CERTIFPATH_CERT;
+            $rawdata->certifpath_ce = $certifpath;
             $rawdata->iscertif = 0;
-            $rawdata->{'999certifpath'} = 1;
+            $rawdata->{'999certifpath'} = $certifpath;
             $rawdata->contenttype_ce = 1;
         }
 
@@ -270,12 +322,12 @@ class totara_reportbuilder_cache_generator extends testing_data_generator {
         if (is_object($record)) {
             $record = (array)$record;
         }
-        self::$ind++;
+        self::$plancount++;
 
         $default = array(
             'templateid' => 0,
             'userid' => $userid,
-            'name' => 'Learning plan '. self::$ind,
+            'name' => 'Learning plan '. self::$plancount,
             'description' => '',
             'startdate' => null,
             'enddate' => time() + 23328000,

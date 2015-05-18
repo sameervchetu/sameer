@@ -53,14 +53,18 @@ if (!has_capability('mod/facetoface:manageattendeesnote', $context)) {
     print_error('nopermissions', 'error', '', 'Showing cancellation note');
 }
 
+/* @var mod_facetoface_renderer|core_renderer $renderer */
+$renderer = $PAGE->get_renderer('mod_facetoface');
+
 // Get custom field values of the cancellation.
 $cancellationnote = facetoface_get_attendee($sessionid, $userid);
 $cancellationnote->id = $cancellationnote->statusid;
 $customfields = customfield_get_data($cancellationnote, 'facetoface_cancellation', 'facetofacecancellation');
 
 // Prepare output.
-$user = $DB->get_record('user', array('id' => $userid));
-$output = get_string('usernoteheading', 'facetoface', fullname($user));
+$usernamefields = get_all_user_name_fields(true);
+$user = $DB->get_record('user', array('id' => $userid), "{$usernamefields}");
+$output = get_string('usercancellationnoteheading', 'facetoface', fullname($user));
 $output .= html_writer::empty_tag('hr');
 if (!empty($customfields)) {
     foreach ($customfields as $cftitle => $cfvalue) {
@@ -71,6 +75,12 @@ if (!empty($customfields)) {
 } else {
     $output .= get_string('none');
 }
+$output .= '<hr />';
+$output .= $renderer->single_button(
+    new moodle_url('/mod/facetoface/editcancellationsnote.php', array('userid' => $userid, 's' => $sessionid, 'sesskey' => sesskey())),
+    get_string('edit', 'mod_facetoface'),
+    'get'
+);
 
 header('Content-type: text/html; charset=utf-8');
 echo $output;

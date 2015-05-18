@@ -167,6 +167,11 @@ class reportbuilder {
     private $_post_config_restrictions;
 
     /**
+     * @var array $filterurlparams URL parameters that need to be reapplied when report reloaded
+     */
+    private $filterurlparams = array();
+
+    /**
      * @var bool $cache Cache state for current report
      */
     public $cache;
@@ -630,7 +635,8 @@ class reportbuilder {
             'tool',
             'totara',
             'local',
-            'enrol'
+            'enrol',
+            'repository',
         );
 
         // Search for rb_sources directories for each plugin type.
@@ -1312,6 +1318,12 @@ class reportbuilder {
                 $url->remove_params($name);
             }
         }
+        // Reapply filter url params.
+        foreach ($this->filterurlparams as $filtername => $filtervalue) {
+            if (is_null($url->param($filtername))) {
+                $url->param($filtername, $filtervalue);
+            }
+        }
         return html_entity_decode($url->out());
     }
 
@@ -1366,21 +1378,23 @@ class reportbuilder {
                     $res = new rb_param($name, $this->_paramoptions);
                     $res->value = $var; // Save the value.
                     $out[] = $res;
-                    $SESSION->reportbuilder[$this->_id][$name] = $var; // And save to session variable.
-                } else {
-                    unset($SESSION->reportbuilder[$this->_id][$name]);
+                    $this->set_filter_url_param($name, $var);
                 }
-            } else if (isset($SESSION->reportbuilder[$this->_id][$name])) {
-                // This param is stored in the session variable.
-                $res = new rb_param($name, $this->_paramoptions);
-                $res->value = $SESSION->reportbuilder[$this->_id][$name];
-                $out[] = $res;
             }
-
         }
         return $out;
     }
 
+    /**
+     * Set parameter related to report filters and settings that need to be reapplied when report reloaded
+     * This should be used when columns sorting are changed, filters reconfigured, etc.
+     *
+     * @param int $name Name of param
+     * @param string $value current value of param
+     */
+    public function set_filter_url_param($name, $value) {
+        $this->filterurlparams[$name] = $value;
+    }
 
     /**
      * Wrapper for displaying search form from filtering class
@@ -2668,7 +2682,7 @@ class reportbuilder {
     function build_query($countonly = false, $filtered = false, $allowcache = true) {
         global $CFG;
 
-        if ($allowcache && $CFG->enablereportcaching) {
+        if ($allowcache && !empty($CFG->enablereportcaching)) {
             $cached = $this->build_cache_query($countonly, $filtered);
             if ($cached[0] != '') {
                 return $cached;
@@ -5104,6 +5118,8 @@ function reportbuilder_generate_cache($reportid) {
  */
 function reportbuilder_send_scheduled_report($sched) {
     global $CFG, $DB, $REPORT_BUILDER_EXPORT_OPTIONS;
+    require_once($CFG->dirroot . '/totara/reportbuilder/email_setting_schedule.php');
+
     $export_codes = array_flip($REPORT_BUILDER_EXPORT_OPTIONS);
 
     if (!$user = $DB->get_record('user', array('id' => $sched->userid))) {
@@ -5173,7 +5189,21 @@ function reportbuilder_send_scheduled_report($sched) {
     $emailed = false;
 
     if ($sched->exporttofilesystem != REPORT_BUILDER_EXPORT_SAVE) {
-        $emailed = email_to_user($user, $fromaddress, $subject, $message, '', $attachment, $attachmentfilename);
+        // Get all emails set in the schedule report.
+        $scheduleemail = new email_setting_schedule($sched->id);
+        $systemusers   = $scheduleemail->get_all_system_users_to_email();
+        $externalusers = email_setting_schedule::get_external_users_to_email($sched->id);
+
+        // Sending email to all system users.
+        foreach ($systemusers as $user) {
+            $emailed = email_to_user($user, $fromaddress, $subject, $message, '', $attachment, $attachmentfilename);
+        }
+
+        // Sending email to external users.
+        foreach ($externalusers as $email) {
+            $userto = \totara_core\totara_user::get_external_user($email);
+            $emailed = email_to_user($userto, $fromaddress, $subject, $message, '', $attachment, $attachmentfilename);
+        }
     }
 
     if (!unlink($CFG->dataroot . DIRECTORY_SEPARATOR . $attachment)) {
@@ -5448,7 +5478,7 @@ function reportbuilder_get_cached($reportid) {
  */
 function reportbuilder_get_all_cached() {
     global $DB, $CFG;
-    if (!$CFG->enablereportcaching) {
+    if (empty($CFG->enablereportcaching)) {
         return array();
     }
     $sql = "SELECT rbc.*, rb.cache, rb.fullname, rb.shortname, rb.embedded
@@ -5878,9 +5908,14 @@ class admin_setting_configdaymonthpicker extends admin_setting {
             $defaultinfo = null;
         }
 
-        // Saved settings.
-        $day = substr($data, 0, 2);
-        $month = substr($data, 2, 2);
+        // Saved settings - needs to parse the default array as well for upgrades.
+        if (is_array($data)) {
+            $day = $data['d'];
+            $month = $data['m'];
+        } else {
+            $day = substr($data, 0, 2);
+            $month = substr($data, 2, 2);
+        }
 
         $days = array_combine(range(1,31), range(1,31));
         $months = array();
@@ -5890,7 +5925,11 @@ class admin_setting_configdaymonthpicker extends admin_setting {
         }
 
         $return = html_writer::start_tag('div', array('class' => 'form-daymonth defaultsnext'));
+        $return .= html_writer::tag('label', get_string('financialyeardaystart', 'totara_reportbuilder', $this->visiblename),
+            array('for' => $this->get_full_name() . '[d]', 'class' => 'accesshide'));
         $return .= html_writer::select($days, $this->get_full_name() . '[d]' , (int)$day);
+        $return .= html_writer::tag('label', get_string('financialyearmonthstart', 'totara_reportbuilder', $this->visiblename),
+            array('for' => $this->get_full_name() . '[m]', 'class' => 'accesshide'));
         $return .= html_writer::select($months, $this->get_full_name() . '[m]', (int)$month);
         $return .= html_writer::end_tag('div');
 

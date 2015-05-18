@@ -61,6 +61,12 @@ $attendee_note->userid = $attendee_note->id;
 $attendee_note->id = $attendee_note->statusid;
 $attendee_note->sessionid = $sessionid;
 $customfields = customfield_get_data($attendee_note, 'facetoface_signup', 'facetofacesignup');
+
+// Prepare output.
+$usernamefields = get_all_user_name_fields(true);
+$user = $DB->get_record('user', array('id' => $userid), "{$usernamefields}");
+$output = get_string('usernoteheading', 'facetoface', fullname($user));
+$output .= html_writer::empty_tag('hr');
 if (!empty($customfields)) {
     foreach ($customfields as $cftitle => $cfvalue) {
         $output .= html_writer::tag('strong', str_replace(' ', '&nbsp;', format_string($cftitle)) . ': ')

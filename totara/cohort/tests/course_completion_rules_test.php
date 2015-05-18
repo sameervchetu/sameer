@@ -294,9 +294,13 @@ class totara_cohort_course_completion_rules_testcase extends reportcache_advance
      */
     public function data_course_completion_list() {
         $data = array(
-            array(array('operator' => COHORT_RULE_COMPLETION_OP_NONE), array('course3', 'course4'), 3),
+            // If user has NOT completed ANY of courses
+            array(array('operator' => COHORT_RULE_COMPLETION_OP_NONE), array('course3', 'course4'), 50),
+            // If user has completed ANY of courses.
             array(array('operator' => COHORT_RULE_COMPLETION_OP_ANY), array('course3', 'course4'), 4),
-            array(array('operator' => COHORT_RULE_COMPLETION_OP_NOTALL), array('course3', 'course4'), 5),
+            // If user has NOT completed ALL of courses
+            array(array('operator' => COHORT_RULE_COMPLETION_OP_NOTALL), array('course3', 'course4'), 52),
+            // If user has completed ALL of courses.
             array(array('operator' => COHORT_RULE_COMPLETION_OP_ALL), array('course3', 'course4'), 2),
         );
         return $data;
@@ -321,10 +325,10 @@ class totara_cohort_course_completion_rules_testcase extends reportcache_advance
         cohort_rules_approve_changes($this->cohort);
 
         // It should match:
-        // 1. data1: 3 (user has NOT completed any of the courses in this list).
-        // 2. data2: 4 (user has completed any of the courses in this list).
-        // 3. data3: 5 (user has NOT completed all of the courses in this list).
-        // 4. data4: 2 (user has completed all of the courses in this list).
+        // 1. data1: 50 (user has NOT completed any of the courses in this list).
+        // 2. data2: 4  (user has completed any of the courses in this list).
+        // 3. data3: 52 (user has NOT completed all of the courses in this list).
+        // 4. data4: 2  (user has completed all of the courses in this list).
         $this->assertEquals($usercount, $DB->count_records('cohort_members', array('cohortid' => $this->cohort->id)));
     }
 }

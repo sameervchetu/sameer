@@ -47,7 +47,7 @@ class rb_filter_category extends rb_filter_type {
         $advanced = $this->advanced;
 
         $objs = array();
-        $objs[] =& $mform->createElement('select', $this->name.'_op', null, $this->get_operators());
+        $objs[] =& $mform->createElement('select', $this->name.'_op', $label, $this->get_operators());
         $objs[] =& $mform->createElement('static', 'title'.$this->name, '',
             html_writer::tag('span', '', array('id' => $this->name . 'title', 'class' => 'dialog-result-title')));
         $mform->setType($this->name.'_op', PARAM_TEXT);

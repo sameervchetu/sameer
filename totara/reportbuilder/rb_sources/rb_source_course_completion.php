@@ -285,10 +285,10 @@ class rb_source_course_completion extends rb_base_source {
                 'course_completion',
                 'grade',
                 get_string('grade', 'rb_source_course_completion'),
-                'grade_grades.finalgrade',
+                'CASE WHEN base.status = ' . COMPLETION_STATUS_COMPLETEVIARPL . ' THEN base.rplgrade
+                      ELSE grade_grades.finalgrade END',
                 array(
                     'joins' => 'grade_grades',
-                    'extrafields' => array('rplgrade' => 'base.rplgrade', 'course_completion_status' => 'base.status'),
                     'displayfunc' => 'course_grade_percent',
                 )
             ),
@@ -306,14 +306,13 @@ class rb_source_course_completion extends rb_base_source {
                 'course_completion',
                 'gradestring',
                 get_string('requiredgrade', 'rb_source_course_completion'),
-                'grade_grades.finalgrade',
+                'CASE WHEN base.status = ' . COMPLETION_STATUS_COMPLETEVIARPL . ' THEN base.rplgrade
+                      ELSE grade_grades.finalgrade END',
                 array(
                     'joins' => array('criteria', 'grade_grades'),
                     'displayfunc' => 'grade_string',
                     'extrafields' => array(
                         'gradepass' => 'criteria.gradepass',
-                        'rplgrade'  => 'base.rplgrade',
-                        'course_completion_status' => 'base.status'
                     ),
                     'defaultheading' => get_string('grade', 'rb_source_course_completion'),
                 )

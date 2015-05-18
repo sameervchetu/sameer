@@ -431,10 +431,7 @@ div#prog-completion-relative-date label {
         width: 85%;
     }
 }
-.sop_text_completed {
-    color: red;
-    text-align: center;
-}
-.sop_view_record {
-    text-align: center;
+
+#category_select label {
+    display: inline;
 }

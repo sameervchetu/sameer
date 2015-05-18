@@ -176,7 +176,7 @@ class core_calendar_renderer extends plugin_renderer_base {
 
         if (empty($events)) {
             // There is nothing to display today.
-            $output .= $this->output->heading(get_string('daywithnoevents', 'calendar'), 3);
+            $output .= html_writer::span(get_string('daywithnoevents', 'calendar'), 'calendar-information calendar-no-results');
         } else {
             $output .= html_writer::start_tag('div', array('class' => 'eventlist'));
             $underway = array();
@@ -194,7 +194,8 @@ class core_calendar_renderer extends plugin_renderer_base {
 
             // Then, show a list of all events that just span this day
             if (!empty($underway)) {
-                $output .= $this->output->heading(get_string('spanningevents', 'calendar'), 3);
+                $output .= html_writer::span(get_string('spanningevents', 'calendar'),
+                    'calendar-information calendar-span-multiple-days');
                 foreach ($underway as $event) {
                     $event->time = calendar_format_event_time($event, time(), null, false, $calendar->timestamp_today());
                     $output .= $this->event($event);
@@ -487,7 +488,7 @@ class core_calendar_renderer extends plugin_renderer_base {
             }
             if (isset($durationbyday[$day])) {
                 $cell->text .= html_writer::start_tag('ul', array('class'=>'events-underway'));
-                foreach($durationbyday[$calendar->day] as $eventindex) {
+                foreach($durationbyday[$day] as $eventindex) {
                     $link = html_writer::link($dayhref, format_string($events[$eventindex]->name, true) . ' (' . get_string('continue'). ')');
                     $cell->text .= html_writer::tag('li', $link, array('class'=>'events-underway'));
                 }
@@ -542,7 +543,7 @@ class core_calendar_renderer extends plugin_renderer_base {
             }
             $output .= html_writer::end_tag('div');
         } else {
-            $output .= $this->output->heading(get_string('noupcomingevents', 'calendar'));
+            $output .= html_writer::span(get_string('noupcomingevents', 'calendar'), 'calendar-information calendar-no-results');
         }
 
         return $output;

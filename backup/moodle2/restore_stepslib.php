@@ -2202,7 +2202,9 @@ class restore_badges_structure_step extends restore_structure_step {
         $params = array(
             'badgeid'      => $this->get_new_parentid('badge'),
             'criteriatype' => $data->criteriatype,
-            'method'       => $data->method
+            'method'       => $data->method,
+            'description'       => isset($data->description) ? $data->description : '',
+            'descriptionformat' => isset($data->descriptionformat) ? $data->descriptionformat : 0,
         );
         $newid = $DB->insert_record('badge_criteria', $params);
         $this->set_mapping('criterion', $data->id, $newid);

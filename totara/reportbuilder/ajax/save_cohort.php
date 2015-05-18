@@ -28,7 +28,7 @@ require_once($CFG->dirroot . '/totara/reportbuilder/filters/cohort.php');
 
 $ids = required_param('ids', PARAM_SEQUENCE);
 $ids = explode(',', $ids);
-$filtername = required_param('filtername', PARAM_TEXT);
+$filtername = required_param('filtername', PARAM_ALPHANUMEXT);
 
 require_login();
 

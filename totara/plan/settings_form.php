@@ -109,6 +109,10 @@ function development_plan_process_settings_form($fromform, $id) {
             $template_update->id = $id;
             $template_update->workflow = 'custom';
             $DB->update_record('dp_template', $template_update);
+
+            if ($template = $DB->get_record('dp_template', array('id' => $id))) {
+                \totara_plan\event\template_updated::create_from_template($template, 'plan')->trigger();
+            }
         }
         $todb = new stdClass();
         $todb->templateid = $id;
@@ -145,6 +149,6 @@ function development_plan_process_settings_form($fromform, $id) {
             }
         }
         $transaction->allow_commit();
-    add_to_log(SITEID, 'plan', 'changed workflow', "template/workflow.php?id={$id}", "Template ID:{$id}");
+
     totara_set_notification(get_string('update_plan_settings', 'totara_plan'), $currenturl, array('class' => 'notifysuccess'));
 }

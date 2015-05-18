@@ -30,6 +30,7 @@ $userid    = required_param('userid', PARAM_INT); // Facetoface signup user ID.
 $sessionid = required_param('s', PARAM_INT); // Facetoface session ID.
 
 $url = new moodle_url('/mod/facetoface/editattendeesnote.php', array('userid' => $userid, 'sessionid' => $sessionid));
+$returnurl = new moodle_url('/mod/facetoface/attendees.php', array('s' => $sessionid, 'backtoallsessions' => 1));
 
 require_sesskey();
 
@@ -58,13 +59,17 @@ customfield_load_data($attendeenote, 'facetofacesignup', 'facetoface_signup');
 $mform = new attendee_note_form(null, array('s' => $sessionid, 'userid' => $userid, 'attendeenote' => $attendeenote));
 $mform->set_data($attendeenote);
 
+if ($mform->is_cancelled()) {
+    redirect($returnurl);
+}
+
 if ($fromform = $mform->get_data()) {
     // Save the custom fields.
     customfield_save_data($fromform, 'facetofacesignup', 'facetoface_signup');
     // Trigger the event.
     \mod_facetoface\event\attendee_note_updated::create_from_instance($attendeenote, $context)->trigger();
     // Redirect.
-    redirect(new moodle_url('/mod/facetoface/attendees.php', array('s' => $sessionid, 'backtoallsessions' => 1)));
+    redirect($returnurl);
 }
 
 $pagetitle = format_string($facetoface->name);

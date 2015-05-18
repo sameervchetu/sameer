@@ -188,34 +188,19 @@ class importcertification_testcase extends reportcache_advanced_testcase {
 
         $this->setAdminUser();
 
-        $generatorstart = time();
-
-        // Create a program.
-        $this->getDataGenerator()->create_course();
+        // Create a certification.
         $this->assertEquals(0, $DB->count_records('prog'), "Programs table isn't empty");
-        $data = array();
-        $data['certifid'] = 1;
-        $data['fullname'] = 'Certification Program1 ';
-        $data['category'] = 1;
-        $data['shortname'] = 'CP1';
-        $data['idnumber'] = 1;
-        $data['available'] = 1;
-        $program = $this->getDataGenerator()->create_program($data);
-
-        $this->assertEquals(1, $DB->count_records('prog'), 'Record count mismatch in program table');
-
-        // Then a certification.
         $this->assertEquals(0, $DB->count_records('certif'), "Certif table isn't empty");
-        $sql = "INSERT INTO {certif}
-                    (learningcomptype, activeperiod, windowperiod, recertifydatetype, timemodified)
-                SELECT  " . CERTIFTYPE_PROGRAM . " AS learningcomptype,
-                        '1 year' AS activeperiod,
-                        '4 week' AS windowperiod,
-                        " . CERTIFRECERT_COMPLETION . " AS recertifydatetype,
-                        " . time() . " AS timemodified
-                FROM {prog}";
-        $DB->execute($sql);
-        $this->assertEquals(1, $DB->count_records('certif'), 'Record count mismatch for certif');
+        $data = array();
+        $data['prog_fullname'] = 'Certification Program1 ';
+        $data['prog_shortname'] = 'CP1';
+        $data['prog_idnumber'] = 1;
+        $data['cert_activeperiod'] = '1 year';
+        $data['cert_windowperiod'] = '4 week';
+        $data['cert_recertifydatetype'] = CERTIFRECERT_EXPIRY;
+        $program = $this->getDataGenerator()->create_certification($data);
+        $this->assertEquals(1, $DB->count_records('prog'), 'Record count mismatch in programs table');
+        $this->assertEquals(1, $DB->count_records('certif'), 'Record count mismatch in certif table');
 
         // Create users.
         $this->assertEquals(2, $DB->count_records('user')); // Guest + Admin.

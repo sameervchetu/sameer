@@ -249,40 +249,6 @@ div#custommenu ul li.selected li.selected a {
     display:none;
 }
 
-
-/***
- ***  yui3 Menu
- ***/
-
-
-.yui3-skin-sam .yui3-menu-content,
-.yui3-skin-sam .yui3-menu .yui3-menu .yui3-menu-content,
-.yui3-skin-sam .yui3-menu-horizontal .yui3-menu-label,.yui3-skin-sam .yui3-menu-horizontal .yui3-menuitem-content{
-    border: 0px none;
-}
-
-.yui3-menu ul {
-    background:transparent;
-}
-
-.yui3-menu ul li ul {
-    top:0px;
-    background:#fff;
-}
-
-.yui3-menu ul li {
-    border-right: 1px solid #ccc;
-}
-
-.yui3-menu ul li ul li {
-    border-right: none;
-    border-bottom: 1px dashed #ccc;
-    padding: 3px;
-}
-div.yui3-menu-content {
-    border: none !important;
-}
-
 ul.first-of-type li a {
     border-top: none !important;
     border-bottom: none !important;

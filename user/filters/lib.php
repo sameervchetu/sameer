@@ -70,7 +70,11 @@ class user_filtering {
         }
 
         $systemcontext = context_system::instance();
-        if (has_capability('totara/core:seedeletedusers', $systemcontext)) {
+        // Allow "Deleted" user filter for Browse list of users page only,
+        // because upstream moodle is not designed to do any operations with deleted users.
+        global $CFG;
+        $adminuserurl = strstr(qualified_me(), 'admin/user.php');
+        if ($adminuserurl === $CFG->admin.'/user.php' && has_capability('totara/core:seedeletedusers', $systemcontext)) {
             $fieldnames['deleted'] = 1;
         }
 

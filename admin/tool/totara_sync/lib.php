@@ -131,10 +131,6 @@ function tool_totara_sync_cron($forcerun=false) {
             totara_sync_log($e->tsync_element, $msg, $e->tsync_logtype, $e->tsync_action);
             $element->get_source()->drop_table();
             continue;
-        } catch (dml_exception $e) {
-            totara_sync_log($element->get_name(), $e->error, 'error', 'unknown');
-            $element->get_source()->drop_table();
-            continue;
         } catch (Exception $e) {
             totara_sync_log($element->get_name(), $e->getMessage(), 'error', 'unknown');
             $element->get_source()->drop_table();

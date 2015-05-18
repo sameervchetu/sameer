@@ -246,7 +246,7 @@ if ($frm = data_submitted()) {
                     continue; // invalid userid
                 }
 
-                $adduser = $DB->get_record('user', array('id' => $adduser), 'id, lastname, firstname, email');
+                $adduser = $DB->get_record('user', array('id' => $adduser), 'id, email, '.get_all_user_name_fields(true));
 
                 if ($approvalrequired) {
                     $adduser->statuscode = MDL_F2F_STATUS_REQUESTED;
@@ -302,8 +302,10 @@ $params = array();
 // Apply search terms
 $searchtext = trim($searchtext);
 if ($searchtext !== '') {   // Search for a subset of remaining users
-    $fullname  = $DB->sql_fullname();
-    $fields = array($fullname, 'email', 'idnumber', 'username');
+    $fields = get_all_user_name_fields();
+    $fields[] = 'email';
+    $fields[] = 'idnumber';
+    $fields[] = 'username';
     $keywords = totara_search_parse_keywords($searchtext);
     list($searchwhere, $searchparams) = totara_search_get_keyword_where_clause($keywords, $fields);
 
@@ -341,7 +343,8 @@ $usercountrow = $DB->get_record_sql("SELECT COUNT(u.id) as num
 $usercount = $usercountrow->num;
 
 if ($usercount <= MAX_USERS_PER_PAGE) {
-    $availableusers = $DB->get_recordset_sql("SELECT u.id, u.firstname, u.lastname, u.email, ss.statuscode
+    $usernamefields = get_all_user_name_fields(true, 'u');
+    $availableusers = $DB->get_recordset_sql("SELECT u.id, $usernamefields, u.email, ss.statuscode
                                         FROM {user} u
                                         LEFT JOIN {facetoface_signups} su
                                           ON u.id = su.userid

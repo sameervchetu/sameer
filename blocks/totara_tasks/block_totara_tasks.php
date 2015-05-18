@@ -74,13 +74,13 @@ class block_totara_tasks extends block_base {
             return $this->content;
         }
 
-        // Now build the table of results.
-        $table = new html_table();
-        $table->attributes['class'] = 'fullwidth invisiblepadded';
+        $output = '';
         if (!empty($this->msgs)) {
-            $cnt = 0;
+            $output .= html_writer::tag('p', get_string('showingxofx', 'block_totara_tasks', array('count' => $count, 'total' => $total)));
+            $output .= html_writer::start_tag('ul');
+
             foreach ($this->msgs as $msg) {
-                $cnt++;
+                $output .= html_writer::start_tag('li');
                 $msgmeta = $DB->get_record('message_metadata', array('messageid' => $msg->id));
                 $msgacceptdata = totara_message_eventdata($msg->id, 'onaccept', $msgmeta);
                 $msgrejectdata = totara_message_eventdata($msg->id, 'onreject', $msgmeta);
@@ -95,36 +95,22 @@ class block_totara_tasks extends block_base {
                 $when = userdate($msg->timecreated, get_string('strftimedate', 'langconfig'));
 
                 // Statement - multipart: user + statment + object.
-                $rowbkgd = ($cnt % 2) ? 'shade' : 'noshade';
                 $cssclass = totara_message_cssclass($msg->msgtype);
                 $msglink = !empty($msg->contexturl) ? $msg->contexturl : '';
 
                 // Status icon.
-                $cells = array();
-                $icon = $OUTPUT->pix_icon('msgicons/' . $msg->icon, format_string($msg->subject), 'totara_core', array('class'=>"msgicon {$cssclass}", 'title' => format_string($msg->subject)));
-                if (!empty($msglink)) {
-                    $url = new moodle_url($msglink);
-                    $attributes = array('href' => $url);
-                    $cellcontent = html_writer::tag('a', $icon, $attributes);
-                } else {
-                    $cellcontent = $icon;
-                }
-                $cell = new html_table_cell($cellcontent);
-                $cell->attributes['class'] = 'status';
-                $cells[] = $cell;
+                $output .= $OUTPUT->pix_icon('msgicons/' . $msg->icon, '', 'totara_core',
+                    array('class'=>"msgicon {$cssclass}", 'title' => format_string($msg->subject)));
 
                 // Details.
                 $text = format_string($msg->subject ? $msg->subject : $msg->fullmessage);
                 if (!empty($msglink)) {
                     $url = new moodle_url($msglink);
                     $attributes = array('href' => $url);
-                    $cellcontent = html_writer::tag('a', $text, $attributes);
+                    $output .= html_writer::tag('a', $text, $attributes);
                 } else {
-                    $cellcontent = $text;
+                    $output .= $text;
                 }
-                $cell = new html_table_cell($cellcontent);
-                $cell->attributes['class'] = 'statement';
-                $cells[] = $cell;
 
                 // Info icon/dialog.
                 $detailbuttons = array();
@@ -161,21 +147,11 @@ class block_totara_tasks extends block_base {
                 $icon = $OUTPUT->pix_icon('i/info', $moreinfotext, 'moodle', array('class'=>'msgicon', 'title' => $moreinfotext, 'alt' => $moreinfotext));
                 $detailjs = totara_message_alert_popup($msg->id, $detailbuttons, 'detailtask');
                 $url = new moodle_url($msglink);
-                $attributes = array('href' => $url, 'id' => 'detailtask'.$msg->id.'-dialog');
-                $cellcontent = html_writer::tag('a', $icon, $attributes) . $detailjs;
-                $cell = new html_table_cell($cellcontent);
-                $cell->attributes['class'] = 'action';
-                $cells[] = $cell;
-                $row = new html_table_row($cells);
-                $row->attributes['class'] = $rowbkgd;
-                $table->data[] = $row;
+                $attributes = array('href' => $url, 'id' => 'detailtask'.$msg->id.'-dialog', 'class' => 'information');
+                $output .= html_writer::tag('a', $icon, $attributes) . $detailjs;
+                $output .= html_writer::end_tag('li');
             }
-        }
-
-        $this->content->text = '';
-        $count = count($this->msgs);
-        if ($count) {
-            $this->content->text .= html_writer::tag('p', get_string('showingxofx', 'block_totara_tasks', array('count' => $count, 'total' => $total)));
+            $output .= html_writer::end_tag('ul');
         } else {
             if (!empty($CFG->block_totara_tasks_showempty)) {
                 if (!empty($this->config->showempty)) {
@@ -188,7 +164,7 @@ class block_totara_tasks extends block_base {
             }
         }
 
-        $this->content->text .= html_writer::table($table);
+        $this->content->text = $output;
         if (!empty($this->msgs)) {
             $url = new moodle_url('/totara/message/tasks.php', array('sesskey' => sesskey()));
             $link = html_writer::link($url, get_string('viewallnot', 'block_totara_tasks'));

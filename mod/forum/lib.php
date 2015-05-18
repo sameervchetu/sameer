@@ -2598,9 +2598,8 @@ function forum_count_discussion_replies($forumid, $forumsort="", $limit=-1, $pag
                   FROM {forum_posts} p
                        JOIN {forum_discussions} d ON p.discussion = d.id
                  WHERE d.forum = ?
-              GROUP BY p.discussion $groupby
-              $orderby";
-        return $DB->get_records_sql("SELECT * FROM ($sql) sq", array($forumid), $limitfrom, $limitnum);
+              GROUP BY p.discussion $groupby $orderby";
+        return $DB->get_records_sql($sql, array($forumid), $limitfrom, $limitnum);
     }
 }
 
@@ -8673,7 +8672,7 @@ function forum_get_posts_by_user($user, array $courses, $musthaveaccess = false,
  * @param type $courseid
  * @return boolean
  */
-function forum_archive_completion($userid, $courseid) {
+function forum_archive_completion($userid, $courseid, $windowopens = NULL) {
     global $DB, $CFG;
 
     require_once($CFG->libdir . '/completionlib.php');

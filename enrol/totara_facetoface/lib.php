@@ -203,7 +203,7 @@ class enrol_totara_facetoface_plugin extends enrol_plugin {
             $f2fids[$session->facetoface] = $session->facetoface;
         }
         list($idin, $params) = $DB->get_in_or_equal($f2fids);
-        $facetofaces = $DB->get_records_select('facetoface', "ID $idin", $params);
+        $facetofaces = $DB->get_records_select('facetoface', "id $idin", $params);
 
         $selectpositiononsignupglobal = get_config(null, 'facetoface_selectpositiononsignupglobal');
         if ($selectpositiononsignupglobal) {
@@ -352,7 +352,7 @@ class enrol_totara_facetoface_plugin extends enrol_plugin {
             $this->email_welcome_message($instance, $USER);
         }
 
-        totara_set_notification($message, $returnurl, array('class' => $cssclass));
+        totara_set_notification($message, $returnurl, array('class' => $cssclass), false);
 
         return $enrolled;
     }

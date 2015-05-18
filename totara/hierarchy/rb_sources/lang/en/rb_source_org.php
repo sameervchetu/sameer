@@ -28,6 +28,7 @@ $string['name'] = 'Name';
 $string['shortname'] = 'Short name';
 $string['description'] = 'Description';
 $string['framework'] = 'Framework';
+$string['frameworkidnumber'] = 'Framework ID number';
 $string['visible'] = 'Visible';
 $string['parentidnumber'] = 'Parent ID number';
 $string['parentfullname'] = 'Parent name';
@@ -35,6 +36,7 @@ $string['competencies'] = 'Competencies';
 $string['timecreated'] = 'Created';
 $string['timemodified'] = 'Modified';
 $string['type'] = 'Type';
+$string['typeidnumber'] = 'Type ID number';
 
 // column types for this source, as strings
 $string['type_org'] = 'Organisation';

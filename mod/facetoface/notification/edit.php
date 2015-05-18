@@ -146,7 +146,7 @@ if ($form->is_cancelled()) {
     $data->body = '';
     $data->managerprefix = '';
 
-    facetoface_notification::set_properties($notification, $data);
+    facetoface_notification::set_from_form($notification, $data);
 
     if (!empty($data->booked)) {
         // If one of the booked radio boxes are selected then the value

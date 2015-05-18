@@ -373,6 +373,7 @@ switch ($searchtype) {
         $formdata['hidden']['facetofaceid'] = $this->customdata['facetofaceid'];
         $formdata['hidden']['sessionid'] = $this->customdata['sessionid'];
         $formdata['hidden']['timeslots'] = $this->customdata['timeslots'];
+        $formdata['hidden']['datetimeknown'] = $this->customdata['datetimeknown'];
 
         // Generate search SQL
         $keywords = totara_search_parse_keywords($query);

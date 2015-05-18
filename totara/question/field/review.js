@@ -36,7 +36,6 @@ M.totara_review = M.totara_review || {
     init: function(Y, args){
         // save a reference to the Y instance (all of its dependencies included)
         this.Y = Y;
-
         if (args) {
             var jargs = Y.JSON.parse(args);
             for (var a in jargs) {
@@ -115,6 +114,18 @@ M.totara_review = M.totara_review || {
                     '&subjectid=' + this.config.subjectid,
             handler
         );
+
+        // Override the totara dialog error handler.
+        totaraDialogs[this.config.formprefix].error = function(dialog, response, url) {
+            // Hide loading animation
+            dialog.hideLoading();
+
+            if (response) {
+                handler._update(response);
+            } else {
+                dialog.hide();
+            }
+        }
 
         M.totara_review.addActions(this.config.formprefix + '_' + this.config.prefix + '_review');
 

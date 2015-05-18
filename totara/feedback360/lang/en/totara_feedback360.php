@@ -260,7 +260,6 @@ $string['urlrequesturlmask'] = 'here';
 $string['userassignmentnotfound'] = 'User assignment not found';
 $string['userheaderfeedback'] = 'Feedback for {$a->username} <a href="{$a->site}/user/view.php?id={$a->userid}" target="_BLANK">View profile</a>';
 $string['userheaderfeedbackbyemail'] = 'Feedback for {$a->username} <a href="{$a->profileurl}" target="_blank">View profile</a> from external user {$a->responder}';
-$string['userheaderfeedbackwolinks'] = 'Feedback for {$a->username}';
 $string['userownheaderfeedback'] = 'Feedback about you';
 $string['userxfeedback360'] = '{$a}\'s Feedback';
 $string['validationfailed'] = 'Validation Failed';

@@ -2868,10 +2868,6 @@ function require_login($courseorid = null, $autologinguest = true, $cm = null, $
                 $modinfo = get_fast_modinfo($course);
                 $cm = $modinfo->get_cm($cm->id);
             }
-            $PAGE->set_cm($cm, $course); // Set's up global $COURSE.
-            $PAGE->set_pagelayout('incourse');
-        } else {
-            $PAGE->set_course($course); // Set's up global $COURSE.
         }
     } else {
         // Do not touch global $COURSE via $PAGE->set_course(),
@@ -2975,6 +2971,13 @@ function require_login($courseorid = null, $autologinguest = true, $cm = null, $
 
     // Do not bother admins with any formalities.
     if (is_siteadmin()) {
+        // Set the global $COURSE.
+        if ($cm) {
+            $PAGE->set_cm($cm, $course);
+            $PAGE->set_pagelayout('incourse');
+        } else if (!empty($courseorid)) {
+            $PAGE->set_course($course);
+        }
         // Set accesstime or the user will appear offline which messes up messaging.
         user_accesstime_log($course->id);
         return;
@@ -3036,6 +3039,7 @@ function require_login($courseorid = null, $autologinguest = true, $cm = null, $
                 if ($preventredirect) {
                     throw new require_login_exception('Course is hidden');
                 }
+                $PAGE->set_context(null);
                 // We need to override the navigation URL as the course won't have been added to the navigation and thus
                 // the navigation will mess up when trying to find it.
                 navigation_node::override_active_url(new moodle_url('/'));
@@ -3056,6 +3060,7 @@ function require_login($courseorid = null, $autologinguest = true, $cm = null, $
                 if ($preventredirect) {
                     throw new require_login_exception('Invalid course login-as access');
                 }
+                $PAGE->set_context(null);
                 echo $OUTPUT->header();
                 notice(get_string('studentnotallowed', '', fullname($USER, true)), $CFG->wwwroot .'/');
             }
@@ -3155,6 +3160,15 @@ function require_login($courseorid = null, $autologinguest = true, $cm = null, $
             }
             redirect($CFG->wwwroot .'/enrol/index.php?id='. $course->id);
         }
+    }
+
+    // Set the global $COURSE.
+    // TODO MDL-49434: setting current course/cm should be after the check $cm->uservisible .
+    if ($cm) {
+        $PAGE->set_cm($cm, $course);
+        $PAGE->set_pagelayout('incourse');
+    } else if (!empty($courseorid)) {
+        $PAGE->set_course($course);
     }
 
     // Check visibility of activity to current user; includes visible flag, groupmembersonly, conditional availability, etc.
@@ -6040,7 +6054,7 @@ function email_to_user($user, $from, $subject, $messagetext, $messagehtml = '', 
         $mail->Encoding = '8bit';
         $mail->LE = "\r\n";
         $mail->AddCustomHeader("Content-class: urn:content-classes:calendarmessage\r\n");
-        $mail->AddCustomHeader("Content-Transfer-Encoding: 8bit\r\n");
+        // Do not add transfer encoding here because PHPMailer does it now.
     }
 
     if ($mail->send()) {

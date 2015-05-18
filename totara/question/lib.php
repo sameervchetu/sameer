@@ -404,9 +404,10 @@ abstract class question_base {
                 $form->addElement('static', 'name', get_string('question', 'totara_question'), 'size="50"');
             } else {
                 $form->addElement('text', 'name', get_string('question', 'totara_question'), 'size="50"');
+                $form->addRule('name', get_string('maximumchars', '', 255), 'maxlength', 255, 'client');
+                $form->addRule('name', null, 'required');
+                $form->setType('name', PARAM_TEXT);
             }
-            $form->addRule('name', null, 'required');
-            $form->setType('name', PARAM_MULTILANG);
             $form->addHelpButton('name', 'question', 'totara_question');
         }
         $this->add_field_specific_settings_elements($form, $readonly, $info);

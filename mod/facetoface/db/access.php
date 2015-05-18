@@ -216,6 +216,15 @@ $capabilities = array(
         ),
     ),
 
+    // Can manage reservations for sessions.
+    'mod/facetoface:managereservations' => array(
+        'captype' => 'write',
+        'contextlevel' => CONTEXT_MODULE,
+        'archetypes' => array(
+            'manager' => CAP_ALLOW,
+        ),
+    ),
+
     // Can view declare interest report.
     'mod/facetoface:viewinterestreport' => array(
         'captype' => 'read',

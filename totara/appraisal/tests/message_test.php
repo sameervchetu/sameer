@@ -23,6 +23,9 @@
  * @subpackage appraisal
  *
  * Unit tests for appraisal_message class of totara/appraisal/lib.php
+ *
+ * To test, run this from the command line from the $CFG->dirroot
+ * vendor/bin/phpunit --verbose appraisal_message_test totara/appraisal/tests/message_test.php
  */
 global $CFG;
 require_once($CFG->dirroot.'/totara/appraisal/tests/appraisal_testcase.php');
@@ -37,7 +40,7 @@ class appraisal_message_test extends appraisal_testcase {
         $msg->event_stage($map['stages']['Stage'], appraisal_message::EVENT_STAGE_DUE);
         $msg->set_delta(-3, appraisal_message::PERIOD_DAY);
         $roles = array(appraisal::ROLE_LEARNER, appraisal::ROLE_MANAGER);
-        $msg->set_roles($roles, 1);
+        $msg->set_roles($roles, appraisal_message::MESSAGE_SEND_ONLY_COMPLETE);
         foreach ($roles as $role) {
             $msg->set_message($role, 'Title '.$role, 'Body '.$role);
         }
@@ -70,7 +73,7 @@ class appraisal_message_test extends appraisal_testcase {
         $msg->event_stage($map['stages']['Stage'], appraisal_message::EVENT_STAGE_DUE);
         $msg->set_delta(-3, appraisal_message::PERIOD_DAY);
         $roles = array(appraisal::ROLE_LEARNER, appraisal::ROLE_MANAGER);
-        $msg->set_roles($roles, 0);
+        $msg->set_roles($roles, appraisal_message::MESSAGE_SEND_ANY_STATE);
         foreach ($roles as $role) {
             $msg->set_message($role, 'Title '.$role, 'Body '.$role);
         }
@@ -83,7 +86,7 @@ class appraisal_message_test extends appraisal_testcase {
         $msgedit->event_appraisal($appraisal->id);
         $msgedit->set_delta(0);
         $roles = array(appraisal::ROLE_LEARNER, appraisal::ROLE_APPRAISER);
-        $msgedit->set_roles($roles, 0);
+        $msgedit->set_roles($roles, appraisal_message::MESSAGE_SEND_ANY_STATE);
         $msgedit->set_message(0, 'Title 0', 'Body 0');
         $msgedit->save();
 
@@ -114,7 +117,7 @@ class appraisal_message_test extends appraisal_testcase {
         $msg1 = new appraisal_message();
         $msg1->event_stage($map['stages']['Stage'], appraisal_message::EVENT_STAGE_DUE);
         $msg1->set_delta(-3, appraisal_message::PERIOD_DAY);
-        $msg1->set_roles($roles, 0);
+        $msg1->set_roles($roles, appraisal_message::MESSAGE_SEND_ANY_STATE);
         $msg1->set_message(0, 'Title 0', 'Body 0');
         $msg1->save();
         $msg1id = $msg1->id;
@@ -122,7 +125,7 @@ class appraisal_message_test extends appraisal_testcase {
 
         $msg2 = new appraisal_message();
         $msg2->event_appraisal($appraisal->id);
-        $msg2->set_roles($roles, 0);
+        $msg2->set_roles($roles);
         $msg2->set_message(0, 'Title 0', 'Body 0');
         $msg2->save();
         $msg2id = $msg2->id;
@@ -130,7 +133,7 @@ class appraisal_message_test extends appraisal_testcase {
 
         $msg3 = new appraisal_message();
         $msg3->event_appraisal($appraisal->id);
-        $msg3->set_roles($roles, 0);
+        $msg3->set_roles($roles);
         $msg3->set_message(0, 'Title 0', 'Body 0');
         $msg3->save();
         $msg3id = $msg3->id;
@@ -138,7 +141,7 @@ class appraisal_message_test extends appraisal_testcase {
 
         $msg4 = new appraisal_message();
         $msg4->event_appraisal($appraisal2->id);
-        $msg4->set_roles($roles, 0);
+        $msg4->set_roles($roles);
         $msg4->set_message(0, 'Title 0', 'Body 0');
         $msg4->save();
         $msg4id = $msg4->id;
@@ -175,7 +178,7 @@ class appraisal_message_test extends appraisal_testcase {
         $msgpast = new appraisal_message();
         $msgpast->event_stage($map['stages']['Stage'], appraisal_message::EVENT_STAGE_DUE);
         $msgpast->set_delta(-1, appraisal_message::PERIOD_DAY);
-        $msgpast->set_roles($roles, 0);
+        $msgpast->set_roles($roles, appraisal_message::MESSAGE_SEND_ANY_STATE);
         $msgpast->set_message(0, 'Title 0', 'Body 0');
         $msgpast->save();
         $msgpastid = $msgpast->id;
@@ -184,7 +187,7 @@ class appraisal_message_test extends appraisal_testcase {
         $msgfuture = new appraisal_message();
         $msgfuture->event_stage($map['stages']['Stage'], appraisal_message::EVENT_STAGE_DUE);
         $msgfuture->set_delta(2, appraisal_message::PERIOD_WEEK);
-        $msgfuture->set_roles($roles, 0);
+        $msgfuture->set_roles($roles, appraisal_message::MESSAGE_SEND_ANY_STATE);
         $msgfuture->set_message(0, 'Title 0', 'Body 0');
         $msgfuture->save();
         $msgfutureid = $msgfuture->id;
@@ -227,7 +230,7 @@ class appraisal_message_test extends appraisal_testcase {
         $msgappr = new appraisal_message();
         $msgappr->event_appraisal($appraisal->id);
         $msgappr->set_delta(-1, appraisal_message::PERIOD_DAY);
-        $msgappr->set_roles($roles, 1);
+        $msgappr->set_roles($roles);
         $msgappr->set_message(0, 'Title 0', 'Body 0');
         $msgappr->save();
         $msgapprid = $msgappr->id;
@@ -248,7 +251,7 @@ class appraisal_message_test extends appraisal_testcase {
         $this->assertEquals(-1, $msgtest->delta);
         $this->assertEquals(1, $msgtest->deltaperiod);
         $this->assertEquals($roles, $msgtest->roles);
-        $this->assertEquals(1, $msgtest->stageiscompleted);
+        $this->assertEquals(0, $msgtest->stageiscompleted);
         foreach ($roles as $role) {
             $content = $msgtest->get_message($role);
             $this->assertEquals('Title 0', $content->name);
@@ -267,7 +270,7 @@ class appraisal_message_test extends appraisal_testcase {
         $msgstage = new appraisal_message();
         $msgstage->event_stage($map['stages']['Stage'], appraisal_message::EVENT_STAGE_DUE);
         $msgstage->set_delta(-1, appraisal_message::PERIOD_DAY);
-        $msgstage->set_roles($roles, 1);
+        $msgstage->set_roles($roles, appraisal_message::MESSAGE_SEND_ONLY_COMPLETE);
         $msgstage->set_message(0, 'Title 0', 'Body 0');
         $msgstage->save();
         $msgstageid = $msgstage->id;
@@ -306,7 +309,7 @@ class appraisal_message_test extends appraisal_testcase {
 
         // Separate messages for roles.
         $msg = new appraisal_message();
-        $msg->set_roles($roles, 0);
+        $msg->set_roles($roles);
         foreach ($roles as $role) {
             $msg->set_message($role, 'Title '.$role, 'Body '.$role);
         }
@@ -318,7 +321,7 @@ class appraisal_message_test extends appraisal_testcase {
 
         // Common message for roles.
         $msg2 = new appraisal_message();
-        $msg2->set_roles($roles, 0);
+        $msg2->set_roles($roles);
         $msg->set_message(0, 'Title', 'Body');
         foreach ($roles as $role) {
             $content = $msg->get_message($role);
@@ -362,12 +365,8 @@ class appraisal_message_test extends appraisal_testcase {
     }
 
     public function test_process_event() {
-        global $CFG, $UNITTEST;
-        // Function in lib/moodlelib.php email_to_user require this.
-        if (!isset($UNITTEST)) {
-            $UNITTEST = new stdClass();
-            $UNITTEST->running = true;
-        }
+        global $CFG, $DB, $UNITTEST;
+
         $this->resetAfterTest();
         $this->preventResetByRollback();
 
@@ -375,96 +374,306 @@ class appraisal_message_test extends appraisal_testcase {
         ini_set('error_log', "$CFG->dataroot/testlog.log"); // Prevent standard logging.
         unset_config('noemailever');
 
-        $user = $this->getDataGenerator()->create_user();
-        list($appraisal) = $this->prepare_appraisal_with_users(array(), array($user));
+        // Testing with 3 users to make sure that one user's stage completion doesn't interfere with another's.
+        $user1 = $this->getDataGenerator()->create_user();
+        $user2 = $this->getDataGenerator()->create_user();
+        $user3 = $this->getDataGenerator()->create_user();
+        list($appraisal) = $this->prepare_appraisal_with_users(array(), array($user1, $user2, $user3));
 
         $map = $this->map($appraisal);
         $roles = array(appraisal::ROLE_LEARNER);
         $stage = new appraisal_stage($map['stages']['Stage']);
         $stagedue = $stage->timedue;
 
-        $msgapprnow = new appraisal_message();
-        $msgapprnow->event_appraisal($appraisal->id);
-        $msgapprnow->set_delta(0);
-        $msgapprnow->set_roles($roles, 1);
-        $msgapprnow->set_message(0, 'Title 0', 'Body 0');
-        $msgapprnow->save();
-        $msgapprnowid = $msgapprnow->id;
-        unset($msgapprnow);
+        // Appraisal activation, immediate.
+        $msgappractivateimmediate = new appraisal_message();
+        $msgappractivateimmediate->event_appraisal($appraisal->id);
+        $msgappractivateimmediate->set_delta(0);
+        $msgappractivateimmediate->set_roles($roles);
+        $msgappractivateimmediate->set_message(0, 'Appraisal activation immediate', 'Body 1');
+        $msgappractivateimmediate->save();
+        $msgappractivateimmediateid = $msgappractivateimmediate->id;
+        unset($msgappractivateimmediate);
 
-        $msgstageapprltr = new appraisal_message();
-        $msgstageapprltr->event_appraisal($appraisal->id);
-        $msgstageapprltr->set_delta(1, appraisal_message::PERIOD_DAY);
-        $msgstageapprltr->set_roles($roles, 1);
-        $msgstageapprltr->set_message(0, 'Title 0', 'Body 0');
-        $msgstageapprltr->save();
-        $msgstageapprltrid = $msgstageapprltr->id;
-        unset($msgstageapprltr);
+        // Appraisal activation, after.
+        $msgappractivateafter = new appraisal_message();
+        $msgappractivateafter->event_appraisal($appraisal->id);
+        $msgappractivateafter->set_delta(1, appraisal_message::PERIOD_DAY);
+        $msgappractivateafter->set_roles($roles);
+        $msgappractivateafter->set_message(0, 'Appraisal activation after', 'Body 2');
+        $msgappractivateafter->save();
+        $msgappractivateafterid = $msgappractivateafter->id;
+        unset($msgappractivateafter);
 
-        $msgstageahead = new appraisal_message();
-        $msgstageahead->event_stage($map['stages']['Stage'], appraisal_message::EVENT_STAGE_DUE);
-        $msgstageahead->set_delta(-1, appraisal_message::PERIOD_DAY);
-        $msgstageahead->set_roles($roles, 1);
-        $msgstageahead->set_message(0, 'Title 0', 'Body 0');
-        $msgstageahead->save();
-        $msgstageaheadid = $msgstageahead->id;
-        unset($msgstageahead);
+        // Stage due before.
+        $msgstageduebefore = new appraisal_message();
+        $msgstageduebefore->event_stage($map['stages']['Stage'], appraisal_message::EVENT_STAGE_DUE);
+        $msgstageduebefore->set_delta(-1, appraisal_message::PERIOD_DAY);
+        $msgstageduebefore->set_roles($roles);
+        $msgstageduebefore->set_message(0, 'Stage due before', 'Body 3');
+        $msgstageduebefore->save();
+        $msgstageduebeforeid = $msgstageduebefore->id;
+        unset($msgstageduebefore);
 
-        $msgstagecomp = new appraisal_message();
-        $msgstagecomp->event_stage($map['stages']['Stage'], appraisal_message::EVENT_STAGE_COMPLETE);
-        $msgstagecomp->set_delta(0);
-        $msgstagecomp->set_roles($roles, 1);
-        $msgstagecomp->set_message(0, 'Title 0', 'Body 0');
-        $msgstagecomp->save();
-        $msgstagecompid = $msgstagecomp->id;
-        unset($msgstagecomp);
+        // Stage due immediate.
+        $msgstagedueimmediate = new appraisal_message();
+        $msgstagedueimmediate->event_stage($map['stages']['Stage'], appraisal_message::EVENT_STAGE_DUE);
+        $msgstagedueimmediate->set_delta(0);
+        $msgstagedueimmediate->set_roles($roles);
+        $msgstagedueimmediate->set_message(0, 'Stage due immediate', 'Body 4');
+        $msgstagedueimmediate->save();
+        $msgstagedueimmediateid = $msgstagedueimmediate->id;
+        unset($msgstagedueimmediate);
 
-        $wastime = time() - 1;
-        $appraisal->validate();
+        // Stage due after complete.
+        $msgstagedueafter = new appraisal_message();
+        $msgstagedueafter->event_stage($map['stages']['Stage'], appraisal_message::EVENT_STAGE_DUE);
+        $msgstagedueafter->set_delta(1, appraisal_message::PERIOD_DAY);
+        $msgstagedueafter->set_roles($roles, appraisal_message::MESSAGE_SEND_ONLY_COMPLETE);
+        $msgstagedueafter->set_message(0, 'Stage due after complete', 'Body 5');
+        $msgstagedueafter->save();
+        $msgstagedueafterid = $msgstagedueafter->id;
+        unset($msgstagedueafter);
+
+        // Stage due after incomplete.
+        $msgstagedueafter = new appraisal_message();
+        $msgstagedueafter->event_stage($map['stages']['Stage'], appraisal_message::EVENT_STAGE_DUE);
+        $msgstagedueafter->set_delta(1, appraisal_message::PERIOD_DAY);
+        $msgstagedueafter->set_roles($roles, appraisal_message::MESSAGE_SEND_ONLY_INCOMPLETE);
+        $msgstagedueafter->set_message(0, 'Stage due after incomplete', 'Body 6');
+        $msgstagedueafter->save();
+        $msgstagedueafterid = $msgstagedueafter->id;
+        unset($msgstagedueafter);
+
+        // Stage completion immediate.
+        $msgstagecompimmediate = new appraisal_message();
+        $msgstagecompimmediate->event_stage($map['stages']['Stage'], appraisal_message::EVENT_STAGE_COMPLETE);
+        $msgstagecompimmediate->set_delta(0);
+        $msgstagecompimmediate->set_roles($roles);
+        $msgstagecompimmediate->set_message(0, 'Stage completion immediate', 'Body 7');
+        $msgstagecompimmediate->save();
+        $msgstagecompimmediateid = $msgstagecompimmediate->id;
+        unset($msgstagecompimmediate);
+
+        // Stage completion after.
+        $msgstagecompafter = new appraisal_message();
+        $msgstagecompafter->event_stage($map['stages']['Stage'], appraisal_message::EVENT_STAGE_COMPLETE);
+        $msgstagecompafter->set_delta(1, appraisal_message::PERIOD_DAY);
+        $msgstagecompafter->set_roles($roles);
+        $msgstagecompafter->set_message(0, 'Stage completion after', 'Body 8');
+        $msgstagecompafter->save();
+        $msgstagecompafterid = $msgstagecompafter->id;
+        unset($msgstagecompafter);
+
+        $validationstatus = $appraisal->validate();
+        $this->assertEmpty($validationstatus[0]);
+        $this->assertEmpty($validationstatus[1]);
+
+        // Testing Part 1 - Activate the appraisal. The following should occur:
+        // Three appraisal activation immediate messages are sent.
+        // The appraisal activation immediate event is marked triggered.
+        // The appraisal activation after and stage due (all threee) events should be scheduled.
+
+        // Record the time before we activate.
+        $minactivationtime = time() - 2;
 
         // Make sure we are redirecting emails.
         $sink = $this->redirectEmails();
         $this->assertTrue(phpunit_util::is_redirecting_phpmailer());
 
+        // Activate the appraisal.
         $appraisal->activate();
 
-        // Get the email that we just sent.
+        // Get the emails that were just sent.
         $emails = $sink->get_messages();
-        $this->assertCount(1, $sink->get_messages());
+        $this->assertCount(3, $emails);
+        $expectedemails = array(
+            array('Appraisal activation immediate', 'username1@example.com'),
+            array('Appraisal activation immediate', 'username2@example.com'),
+            array('Appraisal activation immediate', 'username3@example.com'));
+        foreach ($emails as $email) {
+            $location = array_search(array($email->subject, $email->to), $expectedemails);
+            $this->assertInternalType('int', $location);
+            unset($expectedemails[$location]);
+        }
         $sink->close();
 
-        $nowtime = time() + 1;
+        // Record the time after activation has completed. The scheduled times should be relative to a time in between.
+        $maxactivationtime = time() + 2;
 
-        $msgapprnowtest = new appraisal_message($msgapprnowid);
-        $msgstageapprltrtest = new appraisal_message($msgstageapprltrid);
-        $msgstageaheadtest = new appraisal_message($msgstageaheadid);
+        // Check that the appraisal activation immediate event has been marked triggered.
+        $msgappractivateimmediatetest = new appraisal_message($msgappractivateimmediateid);
+        $this->assertEquals(1, $msgappractivateimmediatetest->wastriggered);
 
-        // Take into account time changes.
-        // Check event activation - immediate.
-        $this->assertEquals(1, $msgapprnowtest->wastriggered);
-        // Check event activation - postponed.
-        $this->assertEquals(0, $msgstageapprltrtest->wastriggered);
-        $this->assertGreaterThan($wastime + 86400, $msgstageapprltrtest->timescheduled);
-        $this->assertLessThan($nowtime + 86400, $msgstageapprltrtest->timescheduled);
-        // Check event stage due - ahead notification.
-        $this->assertEquals(0, $msgstageaheadtest->wastriggered);
-        $this->assertEquals($stagedue - 86400, $msgstageaheadtest->timescheduled);
-        // Check event stage completion - immediate (not completed).
-        $this->assertEquals(0, $msgstageaheadtest->wastriggered);
-        // Check event stage completion - immediate (completed).
-        $roleassignment = appraisal_role_assignment::get_role($appraisal->id, $user->id, $user->id, appraisal::ROLE_LEARNER);
+        // Check that the appraisal activation after and stage due events have not been marked triggered and are scheduled.
+        $msgappractivateaftertest = new appraisal_message($msgappractivateafterid);
+        $this->assertEquals(0, $msgappractivateaftertest->wastriggered);
+        $this->assertGreaterThan($minactivationtime + DAYSECS, $msgappractivateaftertest->timescheduled);
+        $this->assertLessThan($maxactivationtime + DAYSECS, $msgappractivateaftertest->timescheduled);
+        unset($msgappractivateaftertest);
+        $msgstageduebeforetest = new appraisal_message($msgstageduebeforeid);
+        $this->assertEquals(0, $msgstageduebeforetest->wastriggered);
+        $this->assertGreaterThan($minactivationtime, $msgstageduebeforetest->timescheduled);
+        $this->assertLessThan($maxactivationtime, $msgstageduebeforetest->timescheduled);
+        unset($msgstageduebeforetest);
+        $msgstagedueimmediatetest = new appraisal_message($msgstagedueimmediateid);
+        $this->assertEquals(0, $msgstagedueimmediatetest->wastriggered);
+        $this->assertGreaterThan($minactivationtime + DAYSECS, $msgstagedueimmediatetest->timescheduled);
+        $this->assertLessThan($maxactivationtime + DAYSECS, $msgstagedueimmediatetest->timescheduled);
+        unset($msgstagedueimmediatetest);
+        $msgstagedueaftertest = new appraisal_message($msgstagedueafterid);
+        $this->assertEquals(0, $msgstagedueaftertest->wastriggered);
+        $this->assertGreaterThan($minactivationtime + DAYSECS * 2, $msgstagedueaftertest->timescheduled);
+        $this->assertLessThan($maxactivationtime + DAYSECS * 2, $msgstagedueaftertest->timescheduled);
+        unset($msgstagedueaftertest);
 
-        // Redirect emails.
-        $sink2 = $this->redirectEmails();
+        // Testing Part 2 - Run cron now. The following should occur:
+        // Three stage due before messages are sent.
+        // The stage due before event is marked triggered.
+        // This occurs because the stage due before message is scheduled one day before the stage is due, which
+        // in the data generator is one day after the appraisal was created (so must be before $nowtime).
 
+        // Make sure we are redirecting emails.
+        $sink = $this->redirectEmails();
+        $this->assertTrue(phpunit_util::is_redirecting_phpmailer());
+
+        // Run the cron, specifying $nowtime.
+        totara_appraisal_observer::send_scheduled($maxactivationtime);
+
+        // Get the emails that were just sent.
+        $emails = $sink->get_messages();
+        $this->assertCount(3, $emails);
+        $expectedemails = array(
+            array('Stage due before', 'username1@example.com'),
+            array('Stage due before', 'username2@example.com'),
+            array('Stage due before', 'username3@example.com'));
+        foreach ($emails as $email) {
+            $location = array_search(array($email->subject, $email->to), $expectedemails);
+            $this->assertInternalType('int', $location);
+            unset($expectedemails[$location]);
+        }
+        $sink->close();
+
+        // Check that the stage due before event has been marked triggered.
+        $msgstageduebeforetest = new appraisal_message($msgstageduebeforeid);
+        $this->assertEquals(1, $msgstageduebeforetest->wastriggered);
+
+        // Testing Part 3 - Run cron after one day. The following should occur:
+        // Three appraisal activation after messages are sent.
+        // Three stage due immediate messages are sent.
+        // The appraisal activation after and stage due immediate events are marked triggered.
+
+        // Make sure we are redirecting emails.
+        $sink = $this->redirectEmails();
+        $this->assertTrue(phpunit_util::is_redirecting_phpmailer());
+
+        // Run the cron, specifying $maxactivationtime plus one day (just enough for those scheduled for one day after).
+        totara_appraisal_observer::send_scheduled($maxactivationtime + DAYSECS);
+
+        // Get the emails that were just sent.
+        $emails = $sink->get_messages();
+        $this->assertCount(6, $emails);
+        $expectedemails = array(
+            array('Appraisal activation after', 'username1@example.com'),
+            array('Appraisal activation after', 'username2@example.com'),
+            array('Appraisal activation after', 'username3@example.com'),
+            array('Stage due immediate', 'username1@example.com'),
+            array('Stage due immediate', 'username2@example.com'),
+            array('Stage due immediate', 'username3@example.com'));
+        foreach ($emails as $email) {
+            $location = array_search(array($email->subject, $email->to), $expectedemails);
+            $this->assertInternalType('int', $location);
+            unset($expectedemails[$location]);
+        }
+        $sink->close();
+
+        // Check that the appraisal activation after and stage due before events have been marked triggered.
+        $msgappractivateaftertest = new appraisal_message($msgappractivateafterid);
+        $this->assertEquals(1, $msgappractivateaftertest->wastriggered);
+        unset($msgappractivateaftertest);
+        $msgstageduebeforetest = new appraisal_message($msgstageduebeforeid);
+        $this->assertEquals(1, $msgstageduebeforetest->wastriggered);
+        unset($msgstageduebeforetest);
+
+        // Testing Part 4 - Complete the stage for one user. The following should occur:
+        // One stage complete immediate message is sent.
+        // One stage complete after message is scheduled in appraisal_user_event.
+        // The stage complete immediate event should NOT be marked triggered.
+
+        // Record the time before we trigger.
+        $mincompletetime = time() - 2;
+
+        // Make sure we are redirecting emails.
+        $sink = $this->redirectEmails();
+        $this->assertTrue(phpunit_util::is_redirecting_phpmailer());
+
+        // Trigger the stage complete event.
+        $roleassignment = appraisal_role_assignment::get_role($appraisal->id, $user1->id, $user1->id, appraisal::ROLE_LEARNER);
         $this->answer_question($appraisal, $roleassignment, 0, 'completestage');
 
-        $emails = $sink2->get_messages();
-        $this->assertCount(1, $sink2->get_messages());
-        $sink2->close();
+        // Get the emails that were just sent.
+        $emails = $sink->get_messages();
+        $this->assertCount(1, $emails);
+        $expectedemails = array(
+            array('Stage completion immediate', 'username1@example.com'));
+        foreach ($emails as $email) {
+            $location = array_search(array($email->subject, $email->to), $expectedemails);
+            $this->assertInternalType('int', $location);
+            unset($expectedemails[$location]);
+        }
+        $sink->close();
 
-        $msgstageiscomptest = new appraisal_message($msgstagecompid);
-        $this->assertEquals(1, $msgstageiscomptest->wastriggered);
+        // Record the time after triggering. The scheduled time should be relative to a time in between.
+        $maxcompletetime = time() + 2;
+
+        // Check that the stage completion immediate is NOT marked triggered.
+        $msgstagecompimmediatetest = new appraisal_message($msgstagecompimmediateid);
+        $this->assertEquals(0, $msgstagecompimmediatetest->wastriggered);
+        unset($msgstagecompimmediatetest);
+
+        // Check that the stage complete after event has been scheduled.
+        $msgstagecompaftertest = new appraisal_message($msgstagecompafterid);
+        $this->assertEquals(0, $msgstagecompaftertest->wastriggered);
+        $this->assertEquals(0, $msgstagecompaftertest->timescheduled);
+        $userevents = $DB->get_records('appraisal_user_event');
+        $this->assertCount(1, $userevents); // This could fail if other tests add user events, but is unlikely.
+        $userevent = reset($userevents);
+        $this->assertEquals($user1->id, $userevent->userid);
+        $this->assertEquals($msgstagecompafterid, $userevent->eventid);
+        $this->assertGreaterThan($mincompletetime + DAYSECS, $userevent->timescheduled);
+        $this->assertLessThan($maxcompletetime + DAYSECS, $userevent->timescheduled);
+        unset($msgstagecompaftertest);
+
+        // Testing Part 5 - Run cron after three days. The following should occur:
+        // One stage completion after message should be sent and the appraisal_user_event record should be deleted.
+        // One stage due after complete message should be sent.
+        // Two stage due after incomplete messages should be sent.
+
+        // Make sure we are redirecting emails.
+        $sink = $this->redirectEmails();
+        $this->assertTrue(phpunit_util::is_redirecting_phpmailer());
+
+        // Run the cron, specifying $maxcompletetime plus three days (enough that all remaining scheduled should be sent).
+        totara_appraisal_observer::send_scheduled($maxactivationtime + DAYSECS * 3);
+
+        // Get the emails that were just sent.
+        $emails = $sink->get_messages();
+        $this->assertCount(4, $emails);
+        $expectedemails = array(
+            array('Stage completion after', 'username1@example.com'),
+            array('Stage due after complete', 'username1@example.com'),
+            array('Stage due after incomplete', 'username2@example.com'),
+            array('Stage due after incomplete', 'username3@example.com'));
+        foreach ($emails as $email) {
+            $location = array_search(array($email->subject, $email->to), $expectedemails);
+            $this->assertInternalType('int', $location);
+            unset($expectedemails[$location]);
+        }
+        $sink->close();
+
+        // Check that the stage complete after event schedule has been deleted.
+        $userevents = $DB->get_records('appraisal_user_event');
+        $this->assertCount(0, $userevents); // This could fail if other tests add user events, but is unlikely.
 
         ini_set('error_log', $oldlog);
     }

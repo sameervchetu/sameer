@@ -5,7 +5,8 @@ Feature: Users can expand the certification info
   I need to login if forcelogin enabled
 
   Background:
-    Given the following "users" exist:
+    Given I am on a totara site
+    And the following "users" exist:
       | username | firstname | lastname | email |
       | student1 | Student | 1 | student1@asd.com |
     And the following "courses" exist:
@@ -14,7 +15,7 @@ Feature: Users can expand the certification info
     And I log in as "admin"
     And I focus on "Find Learning" "link"
     And I follow "Certifications"
-    And I press "Add new certification"
+    And I press "Create Certification"
     And I press "Save changes"
     And I set the following administration settings values:
       | Enhanced catalog | 1 |
@@ -23,18 +24,18 @@ Feature: Users can expand the certification info
 
   @javascript
   Scenario: Allow not logged in users to expand certification when forcelogin disabled
-    Given I focus on "Find Learning" "link"
+    Given I log in as "admin"
+    And I set the following administration settings values:
+      | forcelogin | 0 |
+    And I log out
+    And I focus on "Find Learning" "link"
     And I follow "Certifications"
     And I click on ".rb-display-expand" "css_element"
     Then I should see "View certification"
 
   @javascript
   Scenario: Allow guest account to expand certification when forcelogin enabled
-    Given I log in as "admin"
-    And I set the following administration settings values:
-      | forcelogin | 1 |
-    And I log out
-    And I click on "#guestlogin input[type=submit]" "css_element"
+    Given I click on "#guestlogin input[type=submit]" "css_element"
     And I focus on "Find Learning" "link"
     And I follow "Certifications"
     And I click on ".rb-display-expand" "css_element"
@@ -42,11 +43,7 @@ Feature: Users can expand the certification info
 
   @javascript
   Scenario: Allow user to expand certification when forcelogin enabled
-    Given I log in as "admin"
-    And I set the following administration settings values:
-      | forcelogin | 1 |
-    And I log out
-    And I click on "#guestlogin input[type=submit]" "css_element"
+    Given I click on "#guestlogin input[type=submit]" "css_element"
     And I log in as "student1"
     And I focus on "Find Learning" "link"
     And I follow "Certifications"

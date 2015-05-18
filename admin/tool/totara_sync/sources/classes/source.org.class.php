@@ -25,20 +25,38 @@
 require_once($CFG->dirroot.'/admin/tool/totara_sync/sources/classes/source.class.php');
 
 abstract class totara_sync_source_org extends totara_sync_source {
-    protected $fields = array(
-        'idnumber',
-        'fullname',
-        'shortname',
-        'description',
-        'frameworkidnumber',
-        'parentidnumber',
-        'typeidnumber',
-        'timemodified'
-    );
+    protected $fields, $customfields, $customfieldtitles;
 
     function __construct() {
+        global $DB;
+
         $this->temptablename = 'totara_sync_org';
         parent::__construct();
+
+        $this->fields = array(
+            'idnumber',
+            'fullname',
+            'shortname',
+            'description',
+            'frameworkidnumber',
+            'parentidnumber',
+            'typeidnumber',
+            'timemodified'
+        );
+
+        // Custom fields
+        $this->customfields = array();
+        $this->customfieldtitles = array();
+        $cfields = $DB->get_records('org_type_info_field');
+        foreach ($cfields as $cf) {
+            // TODO - Implement sync for file custom fields.
+            if ($cf->datatype == 'file') {
+                continue;
+            }
+
+            $this->customfields['customfield_'.$cf->shortname] = $cf->shortname;
+            $this->customfieldtitles['customfield_'.$cf->shortname] = $cf->fullname;
+        }
     }
 
     /**
@@ -87,6 +105,10 @@ abstract class totara_sync_source_org extends totara_sync_source {
             }
         }
 
+        foreach ($this->customfieldtitles as $field => $name) {
+            $mform->addElement('checkbox', 'import_'.$field, $name);
+        }
+
         $mform->addElement('header', 'dbfieldmappings', get_string('fieldmappings', 'tool_totara_sync'));
         $mform->setExpanded('dbfieldmappings');
 
@@ -94,15 +116,26 @@ abstract class totara_sync_source_org extends totara_sync_source {
             $mform->addElement('text', "fieldmapping_{$f}", $f);
             $mform->setType("fieldmapping_{$f}", PARAM_TEXT);
         }
+
+        foreach ($this->customfields as $key => $f) {
+            $mform->addElement('text', 'fieldmapping_'.$key, $f);
+            $mform->setType('fieldmapping_'.$key, PARAM_TEXT);
+        }
     }
 
     function config_save($data) {
         foreach ($this->fields as $f) {
             $this->set_config('import_'.$f, !empty($data->{'import_'.$f}));
         }
+        foreach (array_keys($this->customfields) as $f) {
+            $this->set_config('import_'.$f, !empty($data->{'import_'.$f}));
+        }
 
         foreach ($this->fields as $f) {
             $this->set_config("fieldmapping_{$f}", trim($data->{'fieldmapping_'.$f}));
+        }
+        foreach (array_keys($this->customfields) as $f) {
+            $this->set_config('fieldmapping_'.$f, $data->{'fieldmapping_'.$f});
         }
     }
 

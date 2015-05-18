@@ -329,3 +329,6 @@ if ($hassiteconfig or has_any_capability($capabilities, $systemcontext)) {
 
     $ADMIN->add('backups', $temp);
 }
+
+// TODO: Find better way to integrate the OpenSesame management.
+require("$CFG->dirroot/repository/opensesame/settings.php");

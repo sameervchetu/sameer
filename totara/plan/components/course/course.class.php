@@ -306,7 +306,9 @@ class dp_course_component extends dp_base_component {
 
             // Unassign item
             if ($this->unassign_item($deleteitem)) {
-                add_to_log(SITEID, 'plan', 'removed course', "component.php?id={$this->plan->id}&amp;c=course", "{$deleteitem->fullname} (ID:{$deleteitem->id})");
+                \totara_plan\event\component_deleted::create_from_component(
+                    $this->plan, 'course', $deleteitem->id, $deleteitem->fullname)->trigger();
+
                 dp_plan_check_plan_complete(array($this->plan->id));
 
                 // Remove linked evidence
@@ -449,9 +451,9 @@ class dp_course_component extends dp_base_component {
         // Load fullname of item
         $item->fullname = $DB->get_field('course', 'fullname', array('id' => $itemid));
 
-        $result = $DB->insert_record('dp_plan_course_assign', $item);
-        add_to_log(SITEID, 'plan', 'added course', "component.php?id={$this->plan->id}&amp;c=course", "Course ID: {$itemid}");
-        $item->id = $result;
+        $item->id = $DB->insert_record('dp_plan_course_assign', $item);
+
+        \totara_plan\event\component_created::create_from_component($this->plan, 'course', $itemid, $item->fullname)->trigger();
 
         return $item;
     }
@@ -894,6 +896,7 @@ class dp_course_component extends dp_base_component {
                             get_string('changedfromxtoy', 'totara_plan', (object)array('before' => dp_get_approval_status_from_code($oldrecords[$itemid]->approved),
                             'after' => dp_get_approval_status_from_code($record->approved))).html_writer::empty_tag('br');
                         $approval->text = $text;
+                        $approval->itemid = $course->id;
                         $approval->itemname = $course->fullname;
                         $approval->before = $oldrecords[$itemid]->approved;
                         $approval->after = $record->approved;
@@ -907,9 +910,13 @@ class dp_course_component extends dp_base_component {
                 if ($this->plan->status != DP_PLAN_STATUS_UNAPPROVED && count($approvals)>0) {
                     foreach ($approvals as $approval) {
                         $this->send_component_approval_alert($approval);
-
-                        $action = ($approval->after == DP_APPROVAL_APPROVED) ? 'approved' : 'declined';
-                        add_to_log(SITEID, 'plan', "{$action} course", "component.php?id={$this->plan->id}&amp;c=course", $approval->itemname);
+                        if ($approval->after == DP_APPROVAL_APPROVED) {
+                            \totara_plan\event\approval_approved::create_from_component(
+                                $this->plan, 'course', $approval->itemid, $approval->itemname)->trigger();
+                        } else {
+                            \totara_plan\event\approval_declined::create_from_component(
+                                $this->plan, 'course', $approval->itemid, $approval->itemname)->trigger();
+                        }
                     }
                 }
 

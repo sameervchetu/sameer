@@ -66,9 +66,9 @@ class question_ratingcustom extends multichoice {
 
         for ($i = 0; $i < count($data->choice); $i++) {
             $choice = $data->choice[$i];
-            if (trim($choice['option']) != "" && $choice['score'] == "") {
+            if (isset($choice['option']) && trim($choice['option']) != "" && $choice['score'] == "") {
                 $err["choice[{$i}]"] = get_string('ratingchoicemusthavescore', 'totara_question');
-            } else if ($choice['score'] != "" && trim($choice['option']) == "") {
+            } else if (isset($choice['score']) && $choice['score'] != "" && trim($choice['option']) == "") {
                 $err["choice[{$i}]"] = get_string('ratingscoremusthavechoice', 'totara_question');
             }
         }

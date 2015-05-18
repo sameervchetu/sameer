@@ -111,6 +111,7 @@ if ($data = $form->get_data()) {
             print_error('error:nopermissions', 'totara_plan');
         }
         if ($plan->set_status(DP_PLAN_STATUS_COMPLETE, DP_PLAN_REASON_MANUAL_COMPLETE)) {
+            \totara_plan\event\plan_completed::create_from_plan($plan)->trigger();
             $plan->send_completion_alert();
             totara_set_notification(get_string('plancompletesuccess', 'totara_plan', $plan->name), $viewurl, array('class' => 'notifysuccess'));
         } else {
@@ -125,6 +126,8 @@ if ($data = $form->get_data()) {
         // Save plan data
         $data = file_postupdate_standard_editor($data, 'description', $TEXTAREA_OPTIONS, $TEXTAREA_OPTIONS['context'], 'totara_plan', 'dp_plan', $data->id);
         $DB->update_record('dp_plan', $data);
+        $plan = new development_plan($data->id);
+        \totara_plan\event\plan_updated::create_from_plan($plan)->trigger();
         totara_set_notification(get_string('planupdatesuccess', 'totara_plan'), $viewurl, array('class' => 'notifysuccess'));
     }
 
@@ -139,7 +142,8 @@ if ($data = $form->get_data()) {
 dp_get_plan_base_navlinks($plan->userid);
 $PAGE->navbar->add($plan->name);
 $plan->print_header('plan');
-add_to_log(SITEID, 'plan', 'view', "view.php?id={$plan->id}", $plan->name);
+
+\totara_plan\event\plan_viewed::create_from_plan($plan)->trigger();
 
 // Plan details
 if ($plan->timecompleted) {

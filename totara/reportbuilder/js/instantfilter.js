@@ -81,7 +81,7 @@ M.totara_reportbuilder_instantfilter = M.totara_reportbuilder_instantfilter || {
     refresh_results: function (callback) {
         // Make the ajax call.
         return $.post(
-            M.cfg.wwwroot + '/totara/reportbuilder/ajax/instantreport.php',
+            M.cfg.wwwroot + '/totara/reportbuilder/ajax/instantreport.php' + window.location.search,
             $('.rb-sidebar').serialize()
         ).done( function (data) {
                 // Clear all waiting icons.
