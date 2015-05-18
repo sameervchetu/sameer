@@ -103,7 +103,7 @@ class sop_tool_uploadcourse_step2_form extends tool_uploadcourse_base_form {
         }
         $mform->addElement('select', 'defaults[format]', get_string('format'), $formcourseformats);
         $mform->addHelpButton('defaults[format]', 'format');
-        $mform->setDefault('defaults[format]', $courseconfig->format);
+        $mform->setDefault('defaults[format]', 'topics');
 
         if (!empty($CFG->allowcoursethemes)) {
             $themeobjects = get_list_of_themes();
@@ -126,7 +126,7 @@ class sop_tool_uploadcourse_step2_form extends tool_uploadcourse_base_form {
         $options = range(0, 10);
         $mform->addElement('select', 'defaults[newsitems]', get_string('newsitemsnumber'), $options);
         $mform->addHelpButton('defaults[newsitems]', 'newsitemsnumber');
-        $mform->setDefault('defaults[newsitems]', $courseconfig->newsitems);
+        $mform->setDefault('defaults[newsitems]', 0);
 
         $mform->addElement('selectyesno', 'defaults[showgrades]', get_string('showgrades'));
         $mform->addHelpButton('defaults[showgrades]', 'showgrades');

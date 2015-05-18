@@ -20,6 +20,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+
+
+    define('SOP_CONST_TRUE', 1);
+    define('SOP_CONST_FALSE', 0);
+
 /**
  * To create the certification program through webservice
  *
@@ -39,11 +44,11 @@ function create_certificate($newdata, $editoroptions = NULL) {
 
     global $DB, $USER;
 
-    $newdata->iscertif = 1;
+    $newdata->iscertif = SOP_CONST_TRUE;
     $cert_todb = new stdClass;
 
-    $cert_todb->availablefrom = ($newdata->availablefrom) ? $newdata->availablefrom : 0;
-    $cert_todb->availableuntil = ($newdata->availableuntil) ? $newdata->availableuntil : 0;
+    $cert_todb->availablefrom = ($newdata->availablefrom) ? $newdata->availablefrom : SOP_CONST_FALSE;
+    $cert_todb->availableuntil = ($newdata->availableuntil) ? $newdata->availableuntil : SOP_CONST_FALSE;
     $available = prog_check_availability($cert_todb->availablefrom, $cert_todb->availableuntil);
 
     //Calcuate sortorder
@@ -57,9 +62,9 @@ function create_certificate($newdata, $editoroptions = NULL) {
     $cert_todb->shortname = "Certification_" . $newdata->shortname;
     $cert_todb->fullname = "Certification " . $newdata->fullname;
     $cert_todb->idnumber = $newdata->idnumber;
-    $cert_todb->sortorder = !empty($sortorder) ? $sortorder : 0;
+    $cert_todb->sortorder = !empty($sortorder) ? $sortorder : SOP_CONST_FALSE;
     $cert_todb->icon = $newdata->icon;
-    $cert_todb->exceptionssent = 0;
+    $cert_todb->exceptionssent = SOP_CONST_FALSE;
     $cert_todb->available = $available;
     if (isset($newdata->visible)) {
         $cert_todb->visible = $newdata->visible;
@@ -89,8 +94,8 @@ function create_certificate($newdata, $editoroptions = NULL) {
     $editoroptions = $TEXTAREA_OPTIONS;
     $editoroptions['context'] = context_program::instance($newid);
 
-    $newdata = file_postupdate_standard_editor($newdata, 'summary', $editoroptions, $editoroptions['context'], 'totara_program', 'summary', 0);
-    $newdata = file_postupdate_standard_editor($newdata, 'endnote', $editoroptions, $editoroptions['context'], 'totara_program', 'endnote', 0);
+    $newdata = file_postupdate_standard_editor($newdata, 'summary', $editoroptions, $editoroptions['context'], 'totara_program', 'summary', SOP_CONST_FALSE);
+    $newdata = file_postupdate_standard_editor($newdata, 'endnote', $editoroptions, $editoroptions['context'], 'totara_program', 'endnote', SOP_CONST_FALSE);
     if ($overviewfilesoptions = prog_program_overviewfiles_options($newid)) {
         // Save the course overviewfiles
         $newdata = file_postupdate_standard_filemanager($newdata, 'overviewfiles', $overviewfilesoptions, $editoroptions['context'], 'totara_program', 'overviewfiles', 0);
@@ -164,7 +169,7 @@ function create_mod($data) {
     global $DB, $CFG;
 
     $hr_label = sop_hr_label($data->id);
-    $hr_label->introeditor = array('text' => get_string('label_complete_text', 'local_sop'), 'format' => 1);
+    $hr_label->introeditor = array('text' => get_string('label_complete_text', 'local_sop'), 'format' => SOP_CONST_TRUE);
     require_once($CFG->dirroot . '/course/modlib.php');
     $course = $DB->get_record('course', array('id' => $data->id));
     $completion_label = add_moduleinfo($hr_label, $course);
@@ -179,18 +184,18 @@ function create_mod($data) {
     $data->name = $data->shortname . ' ' . $data->fullname;
     $data->externalurl = $data->customfield_certificationurl;
     $data->introeditor = array('text' => get_string('url_desc', 'local_sop'), 'format' => 1);
-    $data->showdescription = 1;
-    $data->mform_isexpanded_id_content = 1;
+    $data->showdescription = SOP_CONST_TRUE;
+    $data->mform_isexpanded_id_content = SOP_CONST_TRUE;
     $data->display = 3;
-    $data->printintro = 1;
-    $data->completionunlocked = 1;
+    $data->printintro = SOP_CONST_TRUE;
+    $data->completionunlocked = SOP_CONST_TRUE;
     $data->completion = 2;
-    $data->completionview = 1;
-    $data->completionexpected = 0;
+    $data->completionview = SOP_CONST_TRUE;
+    $data->completionexpected = SOP_CONST_FALSE;
     $data->modulename = 'url';
     $data->module = 22;
-    $data->visible = 1;
-    $data->section = 1;
+    $data->visible = SOP_CONST_TRUE;
+    $data->section = SOP_CONST_TRUE;
 
     $mod_url = add_moduleinfo($data, $course);
     $cm_url = $mod_url->coursemodule;
@@ -204,7 +209,7 @@ function create_mod($data) {
     $data->intro = get_string('label_desc', 'local_sop');
     $data->modulename = 'label';
     $data->module = 14;
-    $data->completion = 1;
+    $data->completion = SOP_CONST_TRUE;
     $data->availabilityconditionsjson = '{"op":"&","c":[{"type":"completion","cm":' . $cm_url . ',"e":1}],"showc":[true]}';
 
     unset($data->coursemodule);
@@ -224,7 +229,7 @@ function create_mod($data) {
     
     unset($hr_label);
     $hr_label = sop_hr_label($data->id);
-    $hr_label->introeditor = array('text' => get_string('label_complete2_text', 'local_sop'), 'format' => 1);
+    $hr_label->introeditor = array('text' => get_string('label_complete2_text', 'local_sop'), 'format' => SOP_CONST_TRUE);
     $hr_label->availability = '{"op":"&","c":[{"type":"completion","cm":' . $cm_label . ',"e":1}],"showc":[false]}';
     $completion1_label = add_moduleinfo($hr_label, $course);
     
@@ -242,12 +247,12 @@ function create_mod($data) {
 function sop_hr_label($courseid) {
     $hr_label = new stdClass();
     $hr_label->name = '';
-    $hr_label->introeditor = array('text' => '<hr>', 'format' => 1);
+    $hr_label->introeditor = array('text' => '<hr>', 'format' => SOP_CONST_TRUE);
     $hr_label->modulename = 'label';
     $hr_label->module = 14;
-    $hr_label->visible = 1;
-    $hr_label->section = 1;
-    $hr_label->completion = 0;
+    $hr_label->visible = SOP_CONST_TRUE;
+    $hr_label->section = SOP_CONST_TRUE;
+    $hr_label->completion = SOP_CONST_FALSE;
     $hr_label->course = $courseid;
     return $hr_label;
 }
@@ -293,21 +298,21 @@ function save_courses($csid, $courseid, $programid, stdClass $todb) {
     $todb->{$prefix . 'sortorder'} = 2;
     $todb->{$prefix . 'contenttype'} = $todb->contenttype;
     $todb->{$prefix . 'label'} = $todb->label;
-    $todb->{$prefix . 'completiontype'} = 1;
-    $todb->{$prefix . 'timeallowednum'} = 1;
+    $todb->{$prefix . 'completiontype'} = SOP_CONST_TRUE;
+    $todb->{$prefix . 'timeallowednum'} = SOP_CONST_TRUE;
     $todb->{$prefix . 'timeallowedperiod'} = 2;
     $todb->{$prefix . 'courses'} = $courseid;
 //    $todb->{$prefix.'courseid'} =  $courseid; 
 
-    $todb->contentchanged = 1;
-    $todb->iscertif = 1;
-    $todb->certifpath_ce = 1;
+    $todb->contentchanged = SOP_CONST_TRUE;
+    $todb->iscertif = SOP_CONST_TRUE;
+    $todb->certifpath_ce = SOP_CONST_TRUE;
     $todb->id = $programid;
     $todb->setprefixes_ce = $prefix;
     $todb->certifpath_rc = 2;
-    $todb->contenttype_rc = 1;
-    $todb->sameascert_rc = 1;
-    $todb->contenttype_ce = 1;
+    $todb->contenttype_rc = SOP_CONST_TRUE;
+    $todb->sameascert_rc = SOP_CONST_TRUE;
+    $todb->contenttype_ce = SOP_CONST_TRUE;
     $todb->setprefixes_rc = '';
     $program = new program($programid);
     $programcontent = $program->get_content();
@@ -329,15 +334,15 @@ function save_set($programid, $courseid) {
     $todb = new stdClass();
     $todb->programid = $programid;
     $todb->sortorder = 3;
-    $todb->competencyid = 0;
-    $todb->nextsetoperator = 0;
-    $todb->completiontype = 1;
+    $todb->competencyid = SOP_CONST_FALSE;
+    $todb->nextsetoperator = SOP_CONST_FALSE;
+    $todb->completiontype = SOP_CONST_TRUE;
     $todb->timeallowed = 86400;
-    $todb->recurrencetime = 0;
-    $todb->recurcreatetime = 0;
-    $todb->contenttype = 1;
+    $todb->recurrencetime = SOP_CONST_FALSE;
+    $todb->recurcreatetime = SOP_CONST_FALSE;
+    $todb->contenttype = SOP_CONST_TRUE;
     $todb->label = 'Course set 1';
-    $todb->certifpath = 1;
+    $todb->certifpath = SOP_CONST_TRUE;
 
     $id = $DB->insert_record('prog_courseset', $todb);
 
@@ -365,8 +370,8 @@ function update_mod($course, $mod) {
     $modinfo->externalurl = $mod->customfield_certificationurl;
     $modinfo->coursemodule = $cm->id;
     $modinfo->timemodified = time();
-    $modinfo->introeditor = array('text' => '', 'format' => 1);
-    $modinfo->visible = 1;
+    $modinfo->introeditor = array('text' => '', 'format' => SOP_CONST_TRUE);
+    $modinfo->visible = SOP_CONST_TRUE;
     $modinfo->name = $mod->shortname . ' ' . $mod->fullname;
     require_once($CFG->dirroot . '/course/modlib.php');
     update_moduleinfo($cm, $modinfo, $course);
@@ -478,7 +483,7 @@ function get_recertif_selection_data($ufiltering, $cid) {
 
     $sqlparams = array('cstatus' => CERTIFSTATUS_COMPLETED,
         'renewalstatus' => CERTIFRENEWALSTATUS_NOTDUE,
-        'cdeleted' => 0,
+        'cdeleted' => SOP_CONST_FALSE,
         'cid' => $cid);
     // get the SQL filter
     list($sqlwhere, $params) = $ufiltering->get_sql_filter("u.id<>:exguest AND u.deleted <> 1", array('exguest' => $CFG->siteguest));
@@ -553,7 +558,7 @@ function add_recertif_selection_all($ufiltering, $certid) {
 function sop_edit_section_name($course) {
     global $DB, $CFG;
 
-    $topic_id = $DB->get_record('course_sections', array('course' => $course->id, 'section' => 1), 'id');
+    $topic_id = $DB->get_record('course_sections', array('course' => $course->id, 'section' => SOP_CONST_TRUE), 'id');
 
     $section = new stdClass();
     $section->name = 'Document Training ' . $course->shortname . ' ' . $course->customfield_sopversion;

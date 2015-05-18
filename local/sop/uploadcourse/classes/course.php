@@ -17,8 +17,8 @@
 /**
  * File containing the course class.
  *
- * @package    tool_uploadcourse
- * @copyright  2013 Frédéric Massart
+ * @package    tool_SOP_uploadcourse
+ * @copyright  2015 www.chetu.com
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -93,7 +93,7 @@ class sop_tool_uploadcourse_course {
     protected $updatemode;
 
     /** @var array fields allowed as course data. */
-    static protected $validfields = array('fullname', 'shortname', 'idnumber', 'category', 'customfield_sopversion', 'customfield_issop', 'customfield_certificationurl', 'visible', 'startdate',
+    static protected $validfields = array('fullname', 'shortname', 'idnumber', 'category', 'customfield_sopversion', 'customfield_certificationurl', 'visible', 'startdate',
         'summary', 'format', 'theme', 'lang', 'newsitems', 'showgrades', 'showreports', 'legacyfiles', 'maxbytes',
         'groupmode', 'groupmodeforce', 'groupmodeforce', 'enablecompletion');
 
@@ -710,6 +710,7 @@ class sop_tool_uploadcourse_course {
             require_once($CFG->dirroot.'/local/sop/externallib.php');
             $this->data['lang'] = 'en';
             $this->data['categoryid'] = $this->data['category'];
+            $this->data['customfield_issop'] = 1;
             unset($this->data['category']);
             unset($this->data['legacyfiles']);
             $courses = $this->data;

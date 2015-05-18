@@ -58,8 +58,8 @@ class rb_plan_certifications_history_embedded extends rb_base_embedded {
             ),
             array(
                 'type' => 'base',
-                'value' => 'timeexpires',
-                'heading' => get_string('timeexpires', 'rb_source_dp_certification'),
+                'value' => 'sopversion_completed',
+                'heading' => 'SOP version',
             ),
         );
 

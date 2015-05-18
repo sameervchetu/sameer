@@ -42,26 +42,34 @@ class rb_source_dp_certification_history extends rb_base_source {
      */
     public function __construct() {
         global $DB;
-        $activeunique = $DB->sql_concat("'active'", 'id');
+        $activeunique = $DB->sql_concat("'active'", 'cc.id');
         $historyunique = $DB->sql_concat("'history'", 'id');
         $sql = '(SELECT ' . $activeunique . ' AS id,
                 1 AS active,
-                id AS completionid,
-                certifid,
-                userid,
+                cc.id AS completionid,
+                cc.certifid,
+                cc.userid, ccd.sopversion_completed,
                 timecompleted,
                 timeexpires
-                FROM {certif_completion}
+                FROM {certif_completion} as cc
+                JOIN {prog} as mp ON cc.certifid = mp.certifid
+                JOIN {prog_courseset} as mpc ON mp.id = mpc.programid
+                JOIN {prog_courseset_course} as mpcc ON mpcc.coursesetid = mpc.id
+                JOIN (SELECT DISTINCT(cid.courseid), cid.data as sopversion_completed, cch.userid 
+                FROM {course_completion_history} as cch
+                JOIN {course_info_data} as cid ON cid.courseid = cch.courseid                
+                JOIN {course_info_field} as cif ON cif.shortname = "sopversion" and cif.id = cid.fieldid) AS ccd ON (ccd.courseid = mpcc.courseid AND ccd.userid = cc.userid)
                 UNION
                 SELECT ' . $historyunique . ' AS id,
                 0 AS active,
                 id AS completionid,
                 certifid,
-                userid,
+                userid, sopversion_completed,
                 timecompleted,
-                timeexpires
+                timeexpires 
                 FROM {certif_completion_history}
                 WHERE unassigned = 0)';
+        //echo $sql;exit;
         $this->base = $sql;
         $this->joinlist = $this->define_joinlist();
         $this->columnoptions = $this->define_columnoptions();
@@ -237,6 +245,13 @@ class rb_source_dp_certification_history extends rb_base_source {
                     'dbdatatype' => 'timestamp'
                 )
         );
+        
+        $columnoptions[] = new rb_column_option(
+                'base',
+                'sopversion_completed',
+                'SOP version',
+                'base.sopversion_completed'
+        );
 
         // Include some standard columns.
         $this->add_user_fields_to_columns($columnoptions);
@@ -406,6 +421,10 @@ class rb_source_dp_certification_history extends rb_base_source {
             array(
                 'type' => 'course_category',
                 'value' => 'namelink',
+            ),
+            array(
+                'type' => 'base',
+                'value' => 'sopversion_completed',
             ),
         );
         return $defaultcolumns;

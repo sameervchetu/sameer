@@ -573,6 +573,17 @@ function copy_certif_completion_to_hist($certificationid, $userid, $unassigned =
     $certificationcompletion->unassigned = $unassigned;
     $completionhistory = $DB->get_record('certif_completion_history',
             array('certifid' => $certificationid, 'userid' => $userid, 'timeexpires' => $certificationcompletion->timeexpires));
+    
+    //code for sopversion archival
+    $sopname = 'sopversion';
+    $sopid = $DB->get_record('course_info_field', array('shortname' => $sopname), 'id');
+    $sopcourse = $DB->get_record('prog', array('certifid' => $certificationid), 'shortname');
+    $coursename = explode('Certification_', $sopcourse->shortname);
+    $courseid = $DB->get_record('course', array('shortname' => $coursename[1]), 'id');
+    if($sopversion = $DB->get_record('course_info_data', array('fieldid' => $sopid->id, 'courseid' => $courseid->id), 'data')) {
+        $certificationcompletion->sopversion_completed = $sopversion->data;
+    }
+    //
     if ($completionhistory) {
         $certificationcompletion->id = $completionhistory->id;
         $DB->update_record('certif_completion_history', $certificationcompletion);

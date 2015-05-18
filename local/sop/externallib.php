@@ -185,9 +185,10 @@ class local_sop_external extends external_api {
                 }
             }
 
+            require_once($CFG->dirroot.'/local/sop/lib.php');
             $course['format'] = 'topics';
-            $course['numsections'] = 1;
-            $course['newsitems'] = 0;
+            $course['numsections'] = SOP_CONST_TRUE;
+            $course['newsitems'] = SOP_CONST_FALSE;
             $CFG->defaultblocks_override = ' ';
             
             //Note: create_course() core function check shortname, idnumber, category
@@ -198,22 +199,19 @@ class local_sop_external extends external_api {
             require_once($CFG->dirroot.'/totara/customfield/fieldlib.php');
             $newdata->id = $course['id'];
             
-            require_once($CFG->dirroot.'/local/sop/lib.php');
-            
             customfield_save_data($newdata, 'course', 'course');
             
             //create new URL activity in course
-            require_once($CFG->dirroot.'/local/sop/lib.php');
             $data = clone($newdata);
             $cm = create_mod($data);
             
             // create course completion criteria
             $comp_data = new stdClass();
-            $comp_data->criteria_activity_value[$cm['cm_url']] = 1;
-            $comp_data->criteria_activity_value[$cm['cm_label']] = 1;
+            $comp_data->criteria_activity_value[$cm['cm_url']] = SOP_CONST_TRUE;
+            $comp_data->criteria_activity_value[$cm['cm_label']] = SOP_CONST_TRUE;
             $comp_data->id = $course['id'];
-            $comp_data->overall_aggregation = 1;
-            $comp_data->activity_aggregation = 1;
+            $comp_data->overall_aggregation = SOP_CONST_TRUE;
+            $comp_data->activity_aggregation = SOP_CONST_TRUE;
             require_once($CFG->dirroot.'/completion/criteria/completion_criteria_activity.php');
             $class = 'completion_criteria_activity';
             $criterion = new $class();
@@ -229,7 +227,7 @@ class local_sop_external extends external_api {
 
             // Handle activity aggregation.
             if (empty($comp_data->activity_aggregation)) {
-            $comp_data->activity_aggregation = 0;
+            $comp_data->activity_aggregation = SOP_CONST_FALSE;
             }
 
             $aggdata['criteriatype'] = COMPLETION_CRITERIA_TYPE_ACTIVITY;

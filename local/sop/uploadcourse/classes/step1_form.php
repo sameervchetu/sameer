@@ -25,6 +25,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 require_once($CFG->libdir.'/formslib.php');
+require_once($CFG->dirroot.'/local/sop/uploadcourse/classes/base_form.php');
 
 /**
  * Upload a file CVS file with course information.
@@ -33,7 +34,7 @@ require_once($CFG->libdir.'/formslib.php');
  * @copyright  2011 Piers Harding
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class sop_tool_uploadcourse_step1_form extends tool_uploadcourse_base_form {
+class sop_tool_uploadcourse_step1_form extends sop_tool_uploadcourse_base_form {
 
     /**
      * The standard form definiton.
